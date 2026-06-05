@@ -173,4 +173,46 @@ const P3_UMBRAL = p3mech({ id:'p3_umbral', name:'本影爆碎（超级跳·距�
     else L.push('跳向最远: '+this.farTgt, (this.myDist!=null?('你距落点 '+this.myDist.toFixed(1)+'m'+(this.myDist<=8?' (核心!)':'')):''),'点[开始]重练');
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
-SIM.register(P3_FIRE); SIM.register(P3_WATER); SIM.register(P3_WIND); SIM.register(P3_LONG); SIM.register(P3_LAT); SIM.register(P3_UMBRAL);
+/* 深层痛楚：开场全体魔法伤(奶检, 无站位需求) */
+const P3_DEEPPAIN = p3mech({ id:'p3_deeppain', name:'深层痛楚（全体魔法伤·奶检）',
+  setup(){ this.subEnd=5; this.kind='warn'; },
+  tick(){ if(this.kind==='warn'&&this.t>=this.subEnd){ this.kind='hit'; this.fxT=1.0; } else if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
+  extra(d){ if(this.kind==='hit') d.push({type:'spread',x:0,z:0,radius:this.arenaR,color:[0.6,0.3,0.9],alpha:0.18}); },   // 全场紫脉冲
+  hudLines(){ const L=['P3·一运 — 深层痛楚（开场全体魔法伤）  种子:'+this.seed];
+    if(this.kind==='warn') L.push('全体魔法伤(奶检), '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s'); else L.push('全体伤判定(无站位, 减伤/奶量)','点[开始]重练');
+    return L; }
+});
+/* 暴雷：连黑洞→钢铁(boss自身11m圆,全员出圈) 然后 不连→死刑(一仇坦克, 雷属性易伤) —— 两段都打 */
+const P3_BOLT = p3mech({ id:'p3_bolt', name:'暴雷（钢铁→死刑）',
+  setup(){ this.subEnd=7; this.kind='warn'; this.dsTgt='MT';   // 死刑→一仇(MT)
+    ALL.forEach((r,i)=>{ const ang=i/8*TAU-Math.PI/2; this.players[r].target=[Math.cos(ang)*16, Math.sin(ang)*16]; }); },   // NPC 预走出 11m
+  tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.fireSteel();
+    else if(this.kind==='steel'&&this.fxT<=0){ this.kind='warn2'; this.t2=this.t; }
+    else if(this.kind==='warn2'&&this.t>=this.t2+4) this.fireDeath();
+    else if(this.kind==='death'&&this.fxT<=0) this.kind='done'; },
+  fireSteel(){ this.kind='steel'; this.fxAoes=[{type:'spread',x:0,z:0,radius:11,color:[1,0.9,0.3],alpha:0.4}]; this.fxT=1.4; this.judge(this.fxAoes); },
+  fireDeath(){ this.kind='death'; const tp=Scene.get(this.dsTgt).pos; this.fxAoes=[{type:'spread',x:tp[0],z:tp[1],radius:6,color:[0.95,0.85,0.2],alpha:0.45}]; this.fxT=1.6;
+    if(humanRole!=='OB' && humanRole!==this.dsTgt){ const me=Scene.get(humanRole).pos; if(Math.hypot(me[0]-tp[0],me[1]-tp[1])<=6) this.fail('('+humanRole+') 站进死刑('+this.dsTgt+')范围'); } },
+  extra(d){ if(this.kind==='warn') d.push({type:'spread',x:0,z:0,radius:11,color:[1,0.9,0.3],alpha:0.12});
+    if(this.kind==='warn2'){ const tp=Scene.get(this.dsTgt).pos; d.push({type:'spread',x:tp[0],z:tp[1],radius:6,color:[0.95,0.85,0.2],alpha:0.14}); } },
+  hudLines(){ const L=['P3·一运 — 暴雷（钢铁→死刑）  场地30m  种子:'+this.seed];
+    if(this.kind==='warn') L.push('钢铁: boss 连黑洞→自身 11m 圆, 全员出圈   '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s');
+    else if(this.kind==='steel') L.push('钢铁(11m)判定! '+(this.hitSet.length?('被命中: '+this.hitSet.join(',')):'安全'),'准备死刑(一仇坦克)');
+    else if(this.kind==='warn2') L.push('死刑: 不连黑洞→对一仇('+this.dsTgt+')雷属性死刑, 其他人离开');
+    else L.push('死刑→'+this.dsTgt+'(坦克承受+雷易伤)','点[开始]重练');
+    if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
+});
+/* 真空波：boss 中心全场击退(全程里=清"风/逆风"的击退源) */
+const P3_VACUUM = p3mech({ id:'p3_vacuum', name:'真空波（中心全场击退）',
+  setup(){ this.subEnd=8; this.kind='warn'; },
+  tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.fire(); else if(this.kind==='knock'&&this.t>=this.kbEnd) this.kind='done'; },
+  fire(){ this.kind='knock';
+    for(const r of ALL){ const p=Scene.get(r).pos; let ang=Math.atan2(p[0],p[1]); if(Math.hypot(p[0],p[1])<0.5) ang=ALL.indexOf(r)/8*TAU; startKBv(r, Math.sin(ang)*18, Math.cos(ang)*18); }
+    this.kbEnd=this.t+0.8; this.fxAoes=[{type:'charge',x:0,z:0,radius:8}]; this.fxT=0.8; },
+  extra(d){ if(this.kind==='warn') d.push({type:'charge',x:0,z:0,radius:8}); },
+  hudLines(){ const L=['P3·一运 — 真空波（中心全场击退）  场地30m  种子:'+this.seed];
+    if(this.kind==='warn') L.push('boss 中心全场击退, '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s','全程中=清「风/逆风」的击退源；提前抗击退/选落点');
+    else L.push('击退!(全程中此击退清除风/逆风)','点[开始]重练');
+    return L; }
+});
+SIM.register(P3_DEEPPAIN); SIM.register(P3_BOLT); SIM.register(P3_FIRE); SIM.register(P3_WATER); SIM.register(P3_LONG); SIM.register(P3_LAT); SIM.register(P3_WIND); SIM.register(P3_VACUUM); SIM.register(P3_UMBRAL);
