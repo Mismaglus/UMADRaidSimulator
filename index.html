@@ -624,7 +624,7 @@ const ENG={ phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
           else { const hp=P[host].target; set(c,[hp[0]+ox*3.6, hp[1]+oz*3.6]); } }   // 3/7轮：扇放分摊"正下方(+out)"、仍进分摊圈(凑人头) → 扇朝正下打、下方接形人接（塔放大后下移到3.6，让接形人仍是扇的最近目标）
         else set(c, inT(-hostTw, i===1?-1.75:-1.25, i===1?0.6:1.25)); });   // 1/5轮左塔双扇(另一对,已按ORDER排序)：i=1更左→靠左 / i=2→靠右(左下45°)
       circ.forEach((c,i)=>{ if(stk.length>=2) set(c, inT(1,-1,+1));   // 3/7轮：单个钢→右塔内下(远离分摊)
-        else { const sp=[[1,-1,1],[-1,-1,-1],[-1,1,1]][i%3]; set(c, inT(sp[0],sp[1],sp[2])); } });   // 1/5轮：3钢不重叠(右内下 / 左上 / 左下)
+        else { const sp=[[1,1,1],[-1,-1,-1],[-1,1,1]][i%3]; set(c, inT(sp[0],sp[1],sp[2])); } });   // 1/5轮：3钢不重叠(摊塔搭档→右下,对角于左上分摊 / 左塔外上 / 左塔内下)
       if(P[handler]){
         if(oneStk){ const bs=cone[0]||circ[0], bp=bs?P[bs].target:this.RT;   // 1/5轮：接形人站"摊塔底侧那人(钢/扇)正下方(+out)" → 引导扇形/接钢
           P[handler].target=[ bp[0]+ox*3.6, bp[1]+oz*3.6 ]; }
@@ -643,19 +643,22 @@ const ENG={ phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
       pads.forEach((role,i)=>{ const si=assign[i]||0, h=stk[si]||soak[0], hp=P[h].target, k=(pc[si]=(pc[si]||0)+1)-1, tg=(k-0.5)*1.4;
         set(role, [ hp[0]-ox*3.3 + (-oz)*tg, hp[1]-oz*3.3 + ox*tg ]); });   // 朝boss侧(-out)推出塔环、仍在4.3分摊圈内 → 避开盘外的扇楔形
     } else {
-      // 偶数轮：按"形状"分塔 —— 扇形→左塔、钢铁→右塔（不再按 pair；机制要求左扇右钢）
-      // 偶数轮塔内左右 = 上一轮(同组奇数轮)踩塔的实际相对左右(面向boss)，不是固定排序
+      // 偶数轮(过去/未来终焉=跳跃)：每塔 1扇形+1钢铁。左右塔 = 上一轮(同组奇数轮)踩塔的相对左右(面向boss)
       const Aprev=this.roundAngle(r-1), sidePrev=role=>{const p=Scene.get(role).pos; return Math.cos(Aprev)*p[0]-Math.sin(Aprev)*p[1];};   // 上一轮坐标投到上一轮切向轴：小=更左
-      const cones=soak.filter(x=>P[x].shape==='cone').sort((a,b)=>sidePrev(a)-sidePrev(b));   // 上一轮更靠左者在前
+      const cones=soak.filter(x=>P[x].shape==='cone').sort((a,b)=>sidePrev(a)-sidePrev(b));   // [0]=上一轮更左→左塔, [1]→右塔
       const circs=soak.filter(x=>P[x].shape==='circle').sort((a,b)=>sidePrev(a)-sidePrev(b));
-      // 扇→左塔：上一轮更左者→靠左位(−1.75外稍上) / 另一个→靠右(左下45°)；两扇互锁、楔形射左下场边,避开右塔钢(D1)
-      if(cones[0]) set(cones[0], inT(-1,-1.75,0.6)); if(cones[1]) set(cones[1], inT(-1,-1.25,1.25));
-      // 钢→右塔：更左者→靠左(左下/内·下) / 另一个→靠右(外·上)
-      if(circs[0]) set(circs[0], inT(+1,-1,+1)); if(circs[1]) set(circs[1], inT(+1,+1,-1));
-      // 引导冲锋：非踩塔组在 boss 附近 2x2 承接最近4人
-      const map=inf.job==='TH'?{D1:'TL',D2:'TR',D3:'BL',D4:'BR'}:{MT:'TL',ST:'TR',H1:'BL',H2:'BR'};
-      const off={TL:[-EG.baitR,-EG.baitR],TR:[EG.baitR,-EG.baitR],BL:[-EG.baitR,EG.baitR],BR:[EG.baitR,EG.baitR]};
-      other.forEach(role=>{ const o=off[map[role]]; set(role,atB(o[0],o[1])); });
+      // 扇形→各自塔"外·上角"(塔与boss环夹角)，楔形朝场外(由引导人作最近目标)
+      if(cones[0]) set(cones[0], inT(-1,-1,-1)); if(cones[1]) set(cones[1], inT(+1,+1,-1));
+      // 钢铁→各自塔"正下方"(沿中轴远离boss, 仍在塔内)
+      if(circs[0]) set(circs[0], inT(-1,0,+1.8)); if(circs[1]) set(circs[1], inT(+1,0,+1.8));
+      // 不踩塔组：TL/TR 两人留 boss 附近引导跳跃；BL/BR 两人(D3/D4 或 H1/H2)出到扇形外侧引导扇形
+      const cs=EG.halfSep+EG.soakSide, gdist=4.5;   // 引导人=扇形再往外 gdist：<钢铁距(确保是扇形最近目标→楔形朝外)、>分摊半径(不吃扇形者的跳跃)
+      const map=inf.job==='TH'?{D1:'TL',D2:'TR',D3:'L',D4:'R'}:{MT:'TL',ST:'TR',H1:'L',H2:'R'};
+      other.forEach(role=>{ const m=map[role];
+        if(m==='TL') set(role, atB(-EG.baitR,-EG.baitR));
+        else if(m==='TR') set(role, atB(EG.baitR,-EG.baitR));
+        else if(m==='L') set(role, this.toWorld(-(cs+gdist), EG.ringR-EG.soakOut, A));   // 左扇外侧引导
+        else if(m==='R') set(role, this.toWorld(cs+gdist, EG.ringR-EG.soakOut, A)); });   // 右扇外侧引导
     }
     // 消灭之脚引导：cleave 轮先聚到引导点(过去→两塔中间 +out / 未来→对面 -out)，读条开始后再散到踩塔/垫人位(enterStep)
     if(inf.cleave){ const front=this.pendingPolarity==='past'?1:-1;
@@ -717,7 +720,9 @@ const ENG={ phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
       else if(p.shape==='cone'){ let bx=a[0],bz=a[1]+1,bd=1e18;   // 扇形：锁定最近一人，从自己朝他打出（90°）
         for(const o of ALL){ if(o===role) continue; const q=Scene.get(o).pos, dd=(q[0]-a[0])*(q[0]-a[0])+(q[1]-a[1])*(q[1]-a[1]); if(dd<bd){bd=dd; bx=q[0]; bz=q[1];} }
         aoes.push({kind:'cone',x:a[0],z:a[1],facing:Math.atan2(bx-a[0],bz-a[1]),owner:role}); } }
-    if(inf.charge){ const baiters=inf.job==='TH'?DPS:TH; for(const role of baiters){ const a=Scene.get(role).pos; aoes.push({kind:'charge',x:a[0],z:a[1],radius:EG.spreadR,owner:role}); } }
+    if(inf.charge){ const bp=Scene.get('BOSS').pos;   // 过去/未来终焉：boss+3分身冲锋"最近4人"(各落一个跳跃圈)；扇形者在塔(次近)会吃到, 外侧引导人不吃
+      const near=ALL.slice().sort((x,y)=>{const px=Scene.get(x).pos,py=Scene.get(y).pos; return Math.hypot(px[0]-bp[0],px[1]-bp[1])-Math.hypot(py[0]-bp[0],py[1]-bp[1]);}).slice(0,4);
+      for(const role of near){ const a=Scene.get(role).pos; aoes.push({kind:'charge',x:a[0],z:a[1],radius:EG.spreadR,owner:role}); } }
     this.fxAoes=aoes; this.fxT=EG.effectT;
     const hit={}; ALL.forEach(x=>hit[x]=0);
     for(const ao of aoes){ for(const role of ALL){ const p=Scene.get(role).pos; let inside;
