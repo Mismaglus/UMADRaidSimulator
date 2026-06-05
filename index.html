@@ -342,8 +342,9 @@ function updatePlayer(dt){
   if(keys['w']){mx+=fg[0];mz+=fg[2];} if(keys['s']){mx-=fg[0];mz-=fg[2];}
   if(keys['d']){mx+=rg[0];mz+=rg[2];} if(keys['a']){mx-=rg[0];mz-=rg[2];}
   if(GP.move[0]||GP.move[1]){ mx+=rg[0]*GP.move[0]+fg[0]*GP.move[1]; mz+=rg[2]*GP.move[0]+fg[2]*GP.move[1]; }   // 手柄左摇杆（保留推杆幅度）
+  const ts=(SIM.current&&SIM.current.timeScale)||1;   // 玩家移动也随"速度"倍率(0.25×~2×)缩放，跟上加速后的机制
   if(mx||mz){ const l=Math.hypot(mx,mz), k=l>1?1/l:1;   // 键盘=满速；手柄推杆幅度→对应速度（不强制归一化）
-    me.pos[0]+=mx*k*SPEED*dt; me.pos[1]+=mz*k*SPEED*dt;
+    me.pos[0]+=mx*k*SPEED*dt*ts; me.pos[1]+=mz*k*SPEED*dt*ts;
     if(moveMode==='legacy') playerFacing=Math.atan2(mx,mz); }   // 传统：面朝移动方向(按S=转身后退、A/D=转身侧跑)
   if(moveMode==='standard') playerFacing=Math.atan2(fg[0],fg[2]);   // 现代：永远面朝镜头前方(按S=原地倒退、A/D=横向平移)
   const rr=Math.hypot(me.pos[0],me.pos[1]); if(rr>ARENA_R-0.6){ me.pos[0]*=(ARENA_R-0.6)/rr; me.pos[1]*=(ARENA_R-0.6)/rr; }
@@ -881,7 +882,7 @@ const P3_FIRE = p3mech({ id:'p3_fire', name:'混沌之炎（火）',
   resolve(){ this.kind='hit'; const aoes=[];
     this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.42}); });
     this.blazeTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 火水晶点名最近2人，各放一个10m环形烈焰(中心安全, 命中者被击退)
-    this.blazeTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:11}); });
+    this.blazeTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:15}); });
     this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); P3.knockFrom(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之炎（火）  场地30m  种子:'+this.seed];
@@ -897,7 +898,7 @@ const P3_WATER = p3mech({ id:'p3_water', name:'混沌之水（水）',
   resolve(){ this.kind='hit'; const aoes=[];
     this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.4}); });
     this.tsuTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 水水晶点名最近2人，各放一个5m圆海啸(命中者被击退)
-    this.tsuTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:9}); });
+    this.tsuTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:15}); });
     this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); P3.knockFrom(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之水（水）  场地30m  种子:'+this.seed];
