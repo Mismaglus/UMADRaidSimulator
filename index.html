@@ -128,7 +128,8 @@ function projHead(VP,x,y,z){
 }
 
 /* ==1 CONFIG== */
-const R = 20;                       // 竞技场半径(m)
+const R = 20;                       // 竞技场半径(m) — 默认/Forsaken
+let ARENA_R = R;                    // 当前机制的场地半径(由 SIM.select 设置；地面/网格/边环/场地标点都按它缩放)
 const CAM = {fov:50, near:0.1, far:500};
 const cam = {yaw:Math.PI, pitch:d2r(55), dist:38, target:[0,0,0]};
 const UP = [0,1,0];
@@ -147,6 +148,7 @@ const DECAL_STYLE = {
   spread:    {mesh:'circle',  color:[0.95,0.80,0.20], alpha:0.33, y:0.030},
   stack:     {mesh:'circle',  color:[0.30,0.70,1.00], alpha:0.33, y:0.030},
   cone:      {mesh:'cone',    color:[1.00,0.55,0.10], alpha:0.42, y:0.035},
+  donut:     {mesh:'donut',   color:[0.40,0.62,1.00], alpha:0.34, y:0.028},   // 环形AOE(中心安全)；颜色随属性传入
   halfcleave:{mesh:'half',    color:[0.70,0.20,0.90], alpha:0.30, y:0.015},
   charge:    {mesh:'annulus', color:[1.00,0.85,0.20], alpha:0.60, y:0.040, thin:true},
   bossring:  {mesh:'annulus', color:[0.50,0.55,0.68], alpha:0.50, y:0.014, thin:true}   // boss 身位环
@@ -155,8 +157,8 @@ const DECAL_STYLE = {
 const WAYMARKS=(()=>{
   const rW=R*0.92, red=[0.95,0.27,0.27], yel=[0.96,0.82,0.22], cyan=[0.30,0.72,1.0], pur=[0.80,0.42,0.96];
   const defs=[['A',0,red],['1',45,red],['B',90,yel],['2',135,yel],['C',180,cyan],['3',225,cyan],['D',270,pur],['4',315,pur]];
-  // 注意：默认镜头(南向北)会左右镜像，故 X 取负，使其在玩家视角里"顺时针"
-  return defs.map(d=>{ const t=d2r(d[1]); return {label:d[0], color:d[2], pos:[-rW*Math.sin(t), rW*Math.cos(t)]}; });
+  // 注意：默认镜头(南向北)会左右镜像，故 X 取负，使其在玩家视角里"顺时针"。dir=单位方向，绘制时×ARENA_R*0.92(适配不同场地)
+  return defs.map(d=>{ const t=d2r(d[1]); return {label:d[0], color:d[2], dir:[-Math.sin(t), Math.cos(t)]}; });
 })();
 
 /* ==RENDER setup== WebGL 上下文、着色器、网格 */
@@ -245,12 +247,13 @@ function buildGrid(rad){
 }
 const meshes = {
   cyl:     mkMesh(buildCylinder(24), gl.TRIANGLES),
-  disc:    mkMesh(buildDisc(R,80,0,1), gl.TRIANGLES),
-  grid:    mkMesh(buildGrid(R), gl.LINES),
+  disc:    mkMesh(buildDisc(1,80,0,1), gl.TRIANGLES),    // 单位圆盘 → 按 ARENA_R 缩放(支持不同机制场地大小)
+  grid:    mkMesh(buildGrid(1), gl.LINES),               // 单位网格 → 按 ARENA_R 缩放
   circle:  mkMesh(buildDisc(1,48,0,1), gl.TRIANGLES),
   cone:    mkMesh(buildSector(d2r(45),18), gl.TRIANGLES), // 90° = ±45°
   half:    mkMesh(buildSector(d2r(90),28), gl.TRIANGLES), // 180° = ±90°
-  annulus: mkMesh(buildAnnulus(0.88,48), gl.TRIANGLES),
+  annulus: mkMesh(buildAnnulus(0.88,48), gl.TRIANGLES),   // 细环(塔/冲锋/boss环)
+  donut:   mkMesh(buildAnnulus(0.34,48), gl.TRIANGLES),   // 甜甜圈/环形AOE(中心安全, 内0.34外1.0)
   sphere:  mkMesh(buildSphere(10,14), gl.TRIANGLES)
 };
 
@@ -354,12 +357,13 @@ function render(){
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
 
-  // 地面 + 网格
+  // 地面 + 网格（按当前机制场地半径 ARENA_R 缩放单位网格）
   gl.depthMask(true);
-  drawMesh(meshes.disc, mMul(VP,MID), COL.ground, 1);
-  drawMesh(meshes.grid, mMul(VP,MID), COL.grid, 0.5);
+  const FM=mModel(0,0,0,0,ARENA_R,1,ARENA_R);
+  drawMesh(meshes.disc, mMul(VP,FM), COL.ground, 1);
+  drawMesh(meshes.grid, mMul(VP,FM), COL.grid, 0.5);
   // 边缘亮环
-  drawMesh(meshes.annulus, mMul(VP, mModel(0,0.013,0,0,R,1,R)), [0.55,0.62,0.72], 0.8);
+  drawMesh(meshes.annulus, mMul(VP, mModel(0,0.013,0,0,ARENA_R,1,ARENA_R)), [0.55,0.62,0.72], 0.8);
   // 场地标点不画地面环，改为 overlay 里的立体字母（见 drawOverlay）
 
   // 贴花（不写深度，按顺序混合）
@@ -399,7 +403,8 @@ function drawOverlay(VP){
   // 场地标点：立体字母/数字（始终朝向镜头，按距离缩放，带挤出阴影）
   octx.textAlign='center'; octx.textBaseline='middle';
   for(const w of WAYMARKS){
-    const pB=projHead(VP, w.pos[0],0.3,w.pos[1]), pT=projHead(VP, w.pos[0],3.9,w.pos[1]); if(!pB||!pT) continue;
+    const wx=w.dir[0]*ARENA_R*0.92, wz=w.dir[1]*ARENA_R*0.92;
+    const pB=projHead(VP, wx,0.3,wz), pT=projHead(VP, wx,3.9,wz); if(!pB||!pT) continue;
     const px=Math.hypot(pT[0]-pB[0], pT[1]-pB[1]); if(px<7) continue;          // 世界高 3.6m 投到屏幕的像素 = 字号
     const cx=(pB[0]+pT[0])/2, cy=(pB[1]+pT[1])/2, ext=Math.max(1, Math.round(px*0.07));
     octx.font='900 '+px.toFixed(0)+'px system-ui,sans-serif';
@@ -532,7 +537,7 @@ function inCone(p,ax,az,facing,range){ const dx=p[0]-ax, dz=p[1]-az, d=Math.hypo
   let da=((Math.atan2(dx,dz)-facing+Math.PI)%TAU+TAU)%TAU-Math.PI; return Math.abs(da)<=Math.PI/4; }   // 90°扇=±45°
 
 /* ==机制：P2 Forsaken== 脑死法时间轴 + NPC 自动走位（实现统一机制接口：init/update/drawGround/drawAir/drawHud/mountOptions/reset，仅通过 Scene.* 驱动渲染） */
-const FORSAKEN={ id:'p2_forsaken', name:'P2 遗弃末世 Forsaken', phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
+const FORSAKEN={ id:'p2_forsaken', name:'脑死法（全程）', group:'P2 · 遗弃末世 Forsaken', arenaR:20, phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
   rng:null, seed:1, rotationDir:1, coneJob:'TH', pendingPolarity:null,
   players:{}, LT:null, RT:null, towersActive:false, chargeRingActive:false, clonesActive:false, cleaveActive:false, cleaveFacing:0,
   orbT:0, orbTotal:1, orbY:0, orbActive:false, fxAoes:[], fxT:0, cleaveFxT:0, aoeFlash:0, bossFacing:0, cleaveTarget:null,
@@ -817,29 +822,89 @@ const FORSAKEN={ id:'p2_forsaken', name:'P2 遗弃末世 Forsaken', phase:'idle'
   }
 };
 
-/* ==机制：P3 一运（占位，机制待实现）== 实现同一接口，便于切换演示 */
-const YIYUN={ id:'p3_yiyun', name:'P3 一运（待实现）', phase:'idle', round:0, kind:'', t:0, subEnd:1,
-  seed:1, paused:false, pauseOnFail:true, timeScale:1, win:false, lastFail:'', failLog:[],
-  reset(){ this.phase='idle'; for(let i=0;i<3;i++) Scene.removeActor('C'+i);   // 清掉上一个机制可能残留的分身
-    ALL.forEach((r,i)=>{ const a=Scene.get(r), ang=i/8*TAU; if(a){ a.pos=[Math.cos(ang)*10, Math.sin(ang)*10]; a.marker=null; } });
-    const d=[]; const bb=Scene.get('BOSS'); if(bb) d.push({type:'bossring',x:bb.pos[0],z:bb.pos[1],radius:6}); Scene.setDecals(d);
-    this.setHUD(); },
-  init(seed){ this.seed=seed>>>0; this.reset(); },   // 机制未实现：开始=复位预览
-  update(dt){ this.setHUD(); },
-  setHUD(){ Scene.setHUD([ (humanRole==='OB'?'OB 观察':'我: '+humanRole)+'   种子: '+this.seed, 'P3 一运 — 机制待实现 (WIP)', '在「机制」下拉可切回 P2 Forsaken' ]); }
+/* ====== 机制组：P3 · 一运（每个机制独立练习，不串完整时间轴；场地 30m）====== */
+const P3 = {
+  arenaR: 30,
+  ATTR: { fire:{cn:'炎',col:[1.0,0.45,0.18]}, water:{cn:'水',col:[0.32,0.62,1.0]}, wind:{cn:'风',col:[0.45,0.9,0.55]} },
+  diagPos(i,rad){ const t=d2r([45,135,225,315][((i%4)+4)%4]); return [-Math.sin(t)*rad, Math.cos(t)*rad]; },   // i=0..3 → 斜点 1/2/3/4 (NE/SE/SW/NW)
+  clearCrystals(){ for(const a of Scene.list()) if(a.kind==='crystal') Scene.removeActor(a.id); },
+  spawnCrystal(id,attr,pos){ Scene.addActor({id,kind:'crystal',role:'',pos:pos.slice(),color:this.ATTR[attr].col,radius:1.3,height:3.4,alpha:1,attr}); },
+  ringActors(rad){ ALL.forEach((r,i)=>{ const a=Scene.get(r), ang=i/8*TAU-Math.PI/2; if(a){ a.pos=[Math.cos(ang)*rad, Math.sin(ang)*rad]; a.marker=null; } }); },
+  nearest(x,z,pool){ let best=null,bd=1e18; for(const r of (pool||ALL)){ const p=Scene.get(r).pos, dx=p[0]-x, dz=p[1]-z, d=dx*dx+dz*dz; if(d<bd){bd=d;best=r;} } return best; },
+  farthest(x,z,pool){ let best=null,bd=-1; for(const r of (pool||ALL)){ const p=Scene.get(r).pos, dx=p[0]-x, dz=p[1]-z, d=dx*dx+dz*dz; if(d>bd){bd=d;best=r;} } return best; },
+  pick(rng,arr,n){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;} return a.slice(0,n); },
+  hitCircle(p,x,z,r){ return Math.hypot(p[0]-x,p[1]-z)<=r; },
+  hitDonut(p,x,z,r){ const d=Math.hypot(p[0]-x,p[1]-z); return d>=r*0.34 && d<=r; }   // 0.34=donut 内半径比例(与 meshes.donut 一致)
 };
+/* 统一机制接口的基底：子机制提供 setup()/tick()/hudLines()/extra()/resolve() */
+function p3mech(def){
+  return Object.assign({
+    group:'P3 · 一运', arenaR:P3.arenaR,
+    phase:'idle', seed:1, paused:false, pauseOnFail:true, timeScale:1, win:false, lastFail:'', failLog:[],
+    t:0, subEnd:0, kind:'', rng:null, players:{}, fxAoes:null, fxT:0, hitSet:[],
+    fail(msg){ if(!this.lastFail) this.lastFail=msg; this.failLog.push({msg}); if(this.pauseOnFail) this.paused=true; },
+    reset(){ this.phase='idle'; this.t=0; this.kind=''; this.win=false; this.paused=false; this.failLog=[]; this.lastFail=''; this.fxAoes=null; this.fxT=0; this.hitSet=[];
+      P3.clearCrystals(); P3.ringActors(11); this.players={}; ALL.forEach(r=>this.players[r]={}); Scene.setDecals([]);
+      if(this.onReset) this.onReset(); this.hud(); },
+    init(seed){ this.seed=seed>>>0; this.rng=mulberry32(this.seed); this.reset(); this.phase='run'; this.t=0; this.setup(); this.hud(); },
+    update(dt){
+      if(this.phase!=='run'||this.paused){ this.hud(); return; }
+      const sdt=dt*this.timeScale; this.t+=sdt; if(this.fxT>0) this.fxT-=sdt;
+      for(const r of ALL){ const tg=this.players[r]&&this.players[r].target; if(r!==humanRole&&tg){ const a=Scene.get(r), dx=tg[0]-a.pos[0], dz=tg[1]-a.pos[1], d=Math.hypot(dx,dz); if(d>0.05){ const s=Math.min(d,7.5*sdt); a.pos[0]+=dx/d*s; a.pos[1]+=dz/d*s; } } }
+      if(this.tick) this.tick(sdt);
+      this.buildDecals(); this.hud();
+    },
+    buildDecals(){ const d=[]; if(this.fxT>0&&this.fxAoes) for(const ao of this.fxAoes) d.push(ao); if(this.extra) this.extra(d); Scene.setDecals(d); },
+    judge(aoes){ const hit={}; ALL.forEach(r=>hit[r]=0);
+      for(const ao of aoes){ for(const r of ALL){ const p=Scene.get(r).pos; const ins = ao.type==='donut'?P3.hitDonut(p,ao.x,ao.z,ao.radius):P3.hitCircle(p,ao.x,ao.z,ao.radius); if(ins) hit[r]++; } }
+      this.hitSet=ALL.filter(r=>hit[r]>0);
+      if(humanRole!=='OB' && hit[humanRole]>0) this.fail('('+humanRole+') 被命中 '+hit[humanRole]+' 个 AOE'); },
+    hud(){ Scene.setHUD(this.hudLines?this.hudLines():[this.name]); }
+  }, def);
+}
+/* 混沌之炎：N人火debuff→到期各放5m圆；火水晶→最近玩家10m环形【烈焰】(中心安全, 附击退) */
+const P3_FIRE = p3mech({ id:'p3_fire', name:'混沌之炎（火）',
+  setup(){ const di=Math.floor(this.rng()*4); this.crPos=P3.diagPos(di,this.arenaR*0.6); P3.spawnCrystal('CR0','fire',this.crPos);
+    this.marked=[P3.pick(this.rng,TH,1)[0],P3.pick(this.rng,DPS,1)[0]]; this.subEnd=9; this.kind='warn'; },
+  tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.resolve(); if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
+  resolve(){ this.kind='hit'; const aoes=[];
+    this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.42}); });
+    const tgt=P3.nearest(this.crPos[0],this.crPos[1]); const tp=Scene.get(tgt).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4});
+    this.blazeTgt=tgt; this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); },
+  extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.13}); }); },
+  hudLines(){ const L=['P3·一运 — 混沌之炎（火）  场地30m  种子:'+this.seed];
+    if(this.kind==='warn') L.push('火点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 5m 圆(+4s魔易)；火水晶→最近玩家 10m 环形【烈焰】(中心安全,会击退)');
+    else L.push('烈焰命中最近: '+this.blazeTgt, this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
+    if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
+});
+/* 混沌之水：N人水debuff→到期各放10m环形(中心安全)；水水晶→最近玩家5m圆【海啸】 */
+const P3_WATER = p3mech({ id:'p3_water', name:'混沌之水（水）',
+  setup(){ const di=Math.floor(this.rng()*4); this.crPos=P3.diagPos(di,this.arenaR*0.6); P3.spawnCrystal('CR0','water',this.crPos);
+    this.marked=[P3.pick(this.rng,TH,1)[0],P3.pick(this.rng,DPS,1)[0]]; this.subEnd=9; this.kind='warn'; },
+  tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.resolve(); if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
+  resolve(){ this.kind='hit'; const aoes=[];
+    this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.4}); });
+    const tgt=P3.nearest(this.crPos[0],this.crPos[1]); const tp=Scene.get(tgt).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44});
+    this.tsuTgt=tgt; this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); },
+  extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.13}); }); },
+  hudLines(){ const L=['P3·一运 — 混沌之水（水）  场地30m  种子:'+this.seed];
+    if(this.kind==='warn') L.push('水点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 10m 环形(中心安全)；水水晶→最近玩家 5m 圆【海啸】(+4s魔易)');
+    else L.push('海啸命中最近: '+this.tsuTgt, this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
+    if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
+});
 
 /* ==机制注册表 + 切换器== 共享核心(渲染/相机/移动/主循环/AOE图元)只维护一份；每个机制是注册表里实现统一接口的对象 */
 const SIM={
   mechs:{}, order:[], current:null,
   register(m){ this.mechs[m.id]=m; this.order.push(m); },
   select(id){ const m=this.mechs[id]; if(!m) return; this.current=m;
+    ARENA_R = m.arenaR||R; cam.dist=clamp(ARENA_R*1.85,12,90);   // 适配场地大小的默认视距
     m.mountOptions ? m.mountOptions($('mechOpts')) : ($('mechOpts').innerHTML='');
     m.reset();   // 切换=复位到该机制待命预览（点开始才运行）
     const pb=$('pauseBtn'); if(pb) pb.textContent='暂停';
   }
 };
-SIM.register(FORSAKEN); SIM.register(YIYUN);
+SIM.register(FORSAKEN); SIM.register(P3_FIRE); SIM.register(P3_WATER);
 Scene.onTick = (dt)=>{ if(SIM.current) SIM.current.update(dt); };
 
 /* 引擎 UI 接线（全部走 SIM.current = 当前机制） */
@@ -851,8 +916,13 @@ $('stepBtn').addEventListener('click',()=>{ const m=SIM.current; if(m.phase==='r
 $('reseedBtn').addEventListener('click',()=>{ $('seedInp').value=Math.floor(Math.random()*1e9); });
 $('pofChk').addEventListener('change',e=>{ SIM.current.pauseOnFail=e.target.checked; });
 $('tsSel').addEventListener('change',e=>{ SIM.current.timeScale=parseFloat(e.target.value)||1; });
-// 机制下拉：填充 + 切换
-SIM.order.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name; $('mechSel').appendChild(o); });
+// 机制下拉：按 group 分组(optgroup)填充 + 切换
+(function(){ const sel=$('mechSel'), groups={}, gorder=[];
+  SIM.order.forEach(m=>{ const g=m.group||'其它'; if(!groups[g]){ groups[g]=[]; gorder.push(g); } groups[g].push(m); });
+  gorder.forEach(g=>{ const og=document.createElement('optgroup'); og.label=g;
+    groups[g].forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name; og.appendChild(o); });
+    sel.appendChild(og); });
+})();
 $('mechSel').addEventListener('change',e=>SIM.select(e.target.value));
 SIM.select(FORSAKEN.id);   // 启动默认机制（待命预览，点开始才运行）
 $('moveSel').addEventListener('change',e=>{ moveMode=e.target.value; });   // 传统/现代 移动模式
