@@ -111,6 +111,15 @@ function drawMesh(mesh,MVP,color,alpha){
   gl.uniform3fv(uColor,color); gl.uniform1f(uAlpha,alpha);
   gl.drawArrays(mesh.mode,0,mesh.count);
 }
+/* 动态网格(每帧可改顶点)：用于随机制形状变化的图元，如冲击波的"圆内扇段"扫场 */
+function mkMeshDyn(maxFloats){ const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER, maxFloats*4, gl.DYNAMIC_DRAW); return {buf, count:0, mode:gl.TRIANGLES, dyn:true}; }
+function updateMesh(mesh,arr){ gl.bindBuffer(gl.ARRAY_BUFFER,mesh.buf); gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(arr)); mesh.count=arr.length/4; }
+/* 圆盘内"前沿之后"的弓形/扇段(D=(sinAng,cosAng)=推进方向, 前沿在 p·D=s)，天然落在半径R的场地圆内(=clip在场地) */
+function sweepSegVerts(ang,s,R){ if(s>=R) return []; const ss=Math.max(-R,s), aMax=Math.acos(Math.max(-1,Math.min(1,ss/R)));
+  const N=Math.max(6,Math.ceil(aMax/(Math.PI/40))), mx=ss*Math.sin(ang), mz=ss*Math.cos(ang), v=[];   // 弦中点=s*D
+  for(let i=0;i<N;i++){ const a0=-aMax+2*aMax*i/N, a1=-aMax+2*aMax*(i+1)/N;
+    v.push(mx,0,mz,1, Math.sin(ang+a0)*R,0,Math.cos(ang+a0)*R,1, Math.sin(ang+a1)*R,0,Math.cos(ang+a1)*R,1); }
+  return v; }
 
 /* ==3 geometry builders== 每顶点 [x,y,z,shade] */
 function buildCylinder(N){
@@ -168,7 +177,8 @@ const meshes = {
   half:    mkMesh(buildSector(d2r(90),28), gl.TRIANGLES), // 180° = ±90°
   annulus: mkMesh(buildAnnulus(0.88,48), gl.TRIANGLES),   // 细环(塔/冲锋/boss环)
   donut:   mkMesh(buildAnnulus(0.34,48), gl.TRIANGLES),   // 甜甜圈/环形AOE(中心安全, 内0.34外1.0)
-  sphere:  mkMesh(buildSphere(10,14), gl.TRIANGLES)
+  sphere:  mkMesh(buildSphere(10,14), gl.TRIANGLES),
+  dyn:     mkMeshDyn(2048)                                // 动态网格(冲击波场边扫场段, clip在场地圆内)
 };
 
 /* ==Scene API== 渲染无关边界：引擎(阶段2)只通过这些方法驱动渲染 */

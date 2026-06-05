@@ -25,6 +25,8 @@ function render(){
   // 贴花（不写深度，按顺序混合）
   gl.depthMask(false);
   for(const d of Scene.getDecals()){
+    if(d.type==='sweepseg'){ const verts=sweepSegVerts(d.ang, d.s, d.R||ARENA_R);   // 场边扫场波: 圆内弓形(天然 clip 在场地圆内)
+      if(verts.length){ updateMesh(meshes.dyn, verts); drawMesh(meshes.dyn, mMul(VP, mModel(0,0.024,0,0,1,1,1)), d.color||[0.12,0.34,0.80], d.alpha!=null?d.alpha:0.3); } continue; }
     const st=DECAL_STYLE[d.type]; if(!st) continue;
     const r=d.radius||3, sc=st.thin? r : r;
     const M=mModel(d.x, st.y, d.z, d.facing||0, r, 1, r);
