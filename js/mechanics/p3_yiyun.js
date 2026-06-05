@@ -86,24 +86,18 @@ const P3_WATER = p3mech({ id:'p3_water', name:'混沌之水（水）', attr:'wat
 /* 混沌之风/逆风：全员随机 风(背对击退源)/逆风(正对击退源)；boss中心击退→朝向对=正常,错=翻倍飞出场=死；
    被击退(清除风)后连锁→风水晶点名最近2人 6m双人分摊【龙卷风】(<2人伤害暴涨)。正/背面arc=90°(±45°) */
 const P3_WIND = p3mech({ id:'p3_wind', name:'混沌之顺风 / 逆风', attr:'wind',
-  onReset(){ this.wtype={}; this.flewOut=[]; this.windTgt=null; this.tornadoN=0; },
+  onReset(){ this.windTgt=null; this.dbl=[]; },
   setup(){ const di=Math.floor(this.rng()*4); this.crPos=P3.diagPos(di,this.arenaR*0.6); P3.spawnCrystal('CR0','wind',this.crPos);
-    this.wtype={}; ALL.forEach(r=>{ this.wtype[r]=this.rng()<0.5?'wind':'counter'; });   // 全员随机 风/逆风
-    this.subEnd=9; this.kind='warn'; this.flewOut=[]; },
+    ALL.forEach(r=>{ WIND[r]=this.rng()<0.5?'wind':'counter'; });   // 全员随机 顺风/逆风(共享状态; 任何击退都会清除并按朝向改距离)
+    this.subEnd=9; this.kind='warn'; },
   tick(){
     if(this.kind==='warn' && this.t>=this.subEnd) this.doKnock();
     else if(this.kind==='knock' && this.t>=this.kbEnd) this.doTornado();
     else if(this.kind==='tornado' && this.fxT<=0) this.kind='done';
   },
-  doKnock(){ this.kind='knock'; this.flewOut=[];
-    for(const r of ALL){ const p=Scene.get(r).pos, away=Math.atan2(p[0],p[1]);   // away=远离boss(中心)的朝向
-      let correct=true;
-      if(r===humanRole){ const want=this.wtype[r]==='wind'?away:away+Math.PI;   // 风=背对(面朝away) / 逆风=正对(面朝中心)
-        let da=((playerFacing-want+Math.PI)%TAU+TAU)%TAU-Math.PI; correct=Math.abs(da)<=Math.PI/4; }
-      const dist=correct?15:30; startKBv(r, Math.sin(away)*dist, Math.cos(away)*dist);   // 朝外击退; 错向=翻倍
-      if(!correct) this.flewOut.push(r);
-    }
-    if(humanRole!=='OB' && this.flewOut.indexOf(humanRole)>=0) this.fail('('+humanRole+') 朝向错误→击退翻倍飞出场外=死');
+  doKnock(){ this.kind='knock';   // boss 中心击退所有人; startKBv 会按各自顺/逆风+朝向缩放距离并清除该状态
+    for(const r of ALL){ const p=Scene.get(r).pos, away=Math.atan2(p[0],p[1]); startKBv(r, Math.sin(away)*20, Math.cos(away)*20); }
+    if(humanRole!=='OB' && KBOUT[humanRole]) this.fail('('+humanRole+') 朝向错→击退翻倍飞出场外=死');
     this.kbEnd=this.t+0.6;
   },
   doTornado(){ this.kind='tornado'; this.windTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 风水晶 proc → 点名最近2人, 各放一个6m龙卷风(2人分摊)
@@ -112,16 +106,16 @@ const P3_WIND = p3mech({ id:'p3_wind', name:'混沌之顺风 / 逆风', attr:'wi
     this.dbl=[]; for(const r of ALL){ const p=Scene.get(r).pos, inN=stacks.filter(a=>Math.hypot(p[0]-a.x,p[1]-a.z)<=a.radius).length; if(inN>=2) this.dbl.push(r); }   // 同时在>=2个龙卷风里 = 同时吃两个风分摊 = 即死
     if(humanRole!=='OB' && this.dbl.indexOf(humanRole)>=0) this.fail('('+humanRole+') 同时吃到 2 个龙卷风分摊 = 即死');
   },
-  buffsOf(role){ if(this.kind==='warn' && this.wtype){ const w=this.wtype[role];   // 被击退(进入knock阶段)即清除顺风/逆风, 故只在warn显示
-      if(w) return [{label:w==='wind'?'顺风':'逆风', color:w==='wind'?[0.45,0.9,0.55]:[0.55,0.8,0.98], rem:Math.max(0,this.subEnd-this.t), kind:'debuff'}]; }
+  buffsOf(role){ const w=WIND[role];   // 共享WIND, 被任何击退清除后自动消失
+    if(w) return [{label:w==='wind'?'顺风':'逆风', color:w==='wind'?[0.45,0.9,0.55]:[0.55,0.8,0.98], rem:this.kind==='warn'?Math.max(0,this.subEnd-this.t):0, kind:'debuff'}];
     return []; },
   extra(d){ if(this.kind==='warn') d.push({type:'charge',x:0,z:0,radius:6}); },   // 中心=击退源(charge环示意)
   hudLines(){ const L=['P3·一运 — 混沌之顺风/逆风  场地30m  种子:'+this.seed];
     if(this.kind==='warn'){ L.push('全员: 顺风=背对中心 / 逆风=正对中心   '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 后中心击退');
-      if(humanRole!=='OB') L.push('你: '+(this.wtype[humanRole]==='wind'?'顺风 → 背对中心(后背朝boss)':'逆风 → 正对中心(面朝boss)'));
-      L.push('对向(减半)留场内/反向(加倍)飞出场=死；清风后风水晶在最近2人各放1个6m龙卷风'); }
+      if(humanRole!=='OB'&&WIND[humanRole]) L.push('你: '+(WIND[humanRole]==='wind'?'顺风 → 背对中心(后背朝boss)':'逆风 → 正对中心(面朝boss)'));
+      L.push('对向(减半)留场内/反向(加倍)飞出场=死；被击退即清除, 然后风水晶在最近2人各放1个6m龙卷风'); }
     else if(this.kind==='knock') L.push('击退中…(被击退即清除顺风/逆风)');
-    else L.push('龙卷风(6m双摊)×2 → '+(this.windTgt||[]).join(' / ')+' 各一个', '两圈别重叠! 同时吃2个分摊=即死'+((this.dbl&&this.dbl.length)?('  ✖双吃: '+this.dbl.join(',')):''), (this.flewOut&&this.flewOut.length?('飞出场外: '+this.flewOut.join(',')):'点[开始]重练(随机顺风/逆风+水晶位)'));
+    else L.push('龙卷风(6m双摊)×2 → '+(this.windTgt||[]).join(' / ')+' 各一个', '两圈别重叠! 同时吃2个分摊=即死'+((this.dbl&&this.dbl.length)?('  ✖双吃: '+this.dbl.join(',')):''), '点[开始]重练(随机顺风/逆风+水晶位)');
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
 /* 经度/纬度聚爆：boss 中心两波 90°十字扇。经度=先前后(N/S)→左右(E/W); 纬度=先左右→前后 */
@@ -248,7 +242,7 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
     this.shortE=this.rng()<0.5?'water':'fire'; this.longE=this.shortE==='water'?'fire':'water';   // 要么短水长火, 要么短火长水(同波两人同属性)
     t19.forEach(r=>self.elem[r]=self.shortE); t46.forEach(r=>self.elem[r]=self.longE);
     this.t19=t19; this.t46=t46;
-    this.windType={}; ALL.forEach(r=>self.windType[r]=self.rng()<0.5?'wind':'counter');               // 全员 风/逆风
+    ALL.forEach(r=>{ WIND[r]=self.rng()<0.5?'wind':'counter'; });               // 全员 顺风/逆风(共享WIND; 19/46s烈焰/海啸击退也会清除并按朝向改距离, 65s真空波清剩余)
     this.burstHoriz=this.rng()<0.5;                                                                    // true=纬度(先左右) / false=经度(先前后)
     var V=[0,Math.PI], H=[Math.PI/2,Math.PI*1.5], w1=this.burstHoriz?H:V, w2=this.burstHoriz?V:H;
     this.schedule=[
@@ -271,6 +265,7 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
         this.addFx([{type:'sweepseg',ang:A,s:this.shockSEND,R:this.arenaR,color:[0.12,0.36,0.92],alpha:0.5}],0.45);
         if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos; if(me[0]*Math.sin(A)+me[1]*Math.cos(A) > this.shockSEND) this.fail('究极冲击波第'+(this.shockN+1)+'击 ('+humanRole+')'); }
         this.shockN++; this.shockNextT+=2; if(this.shockN>=8) this.shockOn=false; }
+    if(humanRole!=='OB' && KBOUT[humanRole]){ this.fail('顺/逆风朝向错→击退翻倍飞出场外 ('+humanRole+')'); KBOUT[humanRole]=false; }   // 任何击退(烈焰/海啸/真空波)朝向错都即死
     if(this.t>=this.endT && this.kind!=='done'){ this.kind='done'; this.win=this.failLog.length===0; }
   },
   addFx(decals,dur){ for(var i=0;i<decals.length;i++) this.fxList.push({ao:decals[i],until:this.t+dur}); },
@@ -283,18 +278,15 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
     if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos; for(var i=0;i<aoes.length;i++) if(inCone(me,0,0,aoes[i].facing,aoes[i].radius)){ this.fail('聚爆第'+w+'波 ('+humanRole+')'); break; } } },
   elemResolve(pair, elem){ var aoes=[], cr=this.crystalPos[elem];   // 本波两人同属性 elem; 只有对应属性水晶发动
     pair.forEach(function(r){ var p=Scene.get(r).pos; aoes.push(elem==='fire'?{type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.42}:{type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.4}); });
-    P3.nearestN(cr[0],cr[1],2).forEach(function(r){ var tp=Scene.get(r).pos; aoes.push(elem==='fire'?{type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:15}:{type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44}); });   // 火→烈焰(环+击退) / 水→海啸(圆), 点最近2
+    P3.nearestN(cr[0],cr[1],2).forEach(function(r){ var tp=Scene.get(r).pos; aoes.push(elem==='fire'?{type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:15}:{type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:15}); });   // 火→烈焰(环) / 水→海啸(圆), 点最近2; 两者都击退(清顺/逆风并按朝向改距离)
     this.addFx(aoes,1.6);
     if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos, hit=0; aoes.forEach(a=>{ if(a.type==='donut'?P3.hitDonut(me,a.x,a.z,a.radius):P3.hitCircle(me,a.x,a.z,a.radius)) hit++; }); if(hit>0) this.fail((elem==='fire'?'炎':'水')+'解除命中×'+hit+' ('+humanRole+')'); }
     if(elem==='fire') P3.knockFrom(aoes); },   // 只有烈焰击退
   fireUmbral(){ this.umbralTgt=P3.farthest(0,0); var fp=Scene.get(this.umbralTgt).pos.slice(), bb=Scene.get('BOSS'); if(bb)bb.pos=fp.slice();
     this.addFx([{type:'spread',x:fp[0],z:fp[1],radius:8,color:[0.88,0.2,0.96],alpha:0.5},{type:'donut',x:fp[0],z:fp[1],radius:16,color:[0.7,0.25,0.95],alpha:0.26},{type:'donut',x:fp[0],z:fp[1],radius:26,color:[0.55,0.3,0.9],alpha:0.15}],1.8);
     if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos; if(Math.hypot(me[0]-fp[0],me[1]-fp[1])<=8) this.fail('本影核心(<8m) ('+humanRole+')'); } },
-  fireVacuum(){ for(var i=0;i<ALL.length;i++){ var r=ALL[i], p=Scene.get(r).pos, away=Math.atan2(p[0],p[1]), correct=true;
-      if(r===humanRole){ var want=this.windType[r]==='wind'?away:away+Math.PI, da=((playerFacing-want+Math.PI)%TAU+TAU)%TAU-Math.PI; correct=Math.abs(da)<=Math.PI/4; }
-      startKBv(r, Math.sin(away)*15*(correct?1:2), Math.cos(away)*15*(correct?1:2));
-      if(r===humanRole && !correct) this.fail('真空波: 顺风/逆风朝向错→翻倍飞出场 ('+humanRole+')'); }
-    this.windCleared=true; this._tornadoAt=this.t+0.7; this.addFx([{type:'charge',x:0,z:0,radius:8}],0.7); },
+  fireVacuum(){ for(var i=0;i<ALL.length;i++){ var r=ALL[i], p=Scene.get(r).pos, away=Math.atan2(p[0],p[1]); startKBv(r, Math.sin(away)*20, Math.cos(away)*20); }   // 中心击退; startKBv 按各自顺/逆风+朝向缩放并清除残余的风(死亡由 tick 统一查 KBOUT)
+    this._tornadoAt=this.t+0.7; this.addFx([{type:'charge',x:0,z:0,radius:8}],0.7); },
   extra(d){
     if(this.steelTele) d.push({type:'spread',x:0,z:0,radius:11,color:[1,0.9,0.3],alpha:0.12});
     if(this.burstTele===1){ var V=[0,Math.PI],H=[Math.PI/2,Math.PI*1.5]; (this.burstHoriz?H:V).forEach(f=>d.push({type:'cone',x:0,z:0,facing:f,radius:this.arenaR,color:[1,0.5,0.12],alpha:0.12})); }
@@ -308,10 +300,10 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
   },
   buffsOf(role){ var out=[], e=this.elem&&this.elem[role];
     if(e){ var rem = (this.t19&&this.t19.indexOf(role)>=0)?19-this.t:((this.t46&&this.t46.indexOf(role)>=0)?46-this.t:0); if(rem>0) out.push({label:P3.ATTR[e].cn,color:P3.ATTR[e].col,rem:rem,kind:'debuff'}); }
-    var w=this.windType&&this.windType[role]; if(w && !this.windCleared && this.t<68) out.push({label:w==='wind'?'顺风':'逆风',color:w==='wind'?[0.45,0.9,0.55]:[0.55,0.8,0.98],rem:Math.max(0,68-this.t),kind:'debuff'});
+    var w=WIND[role]; if(w) out.push({label:w==='wind'?'顺风':'逆风',color:w==='wind'?[0.45,0.9,0.55]:[0.55,0.8,0.98],rem:Math.max(0,68-this.t),kind:'debuff'});   // 共享WIND, 被任何击退清除即消失
     return out; },
   hudLines(){ var L=['P3·一运 ★全程  场地30m  种子:'+this.seed, '⏱ '+this.t.toFixed(0)+'s · '+this.phaseTxt+' · 速度可调(2×更快)'];
-    if(humanRole!=='OB'){ var me=[]; if(this.elem[humanRole]) me.push(P3.ATTR[this.elem[humanRole]].cn); if(this.windType[humanRole]&&!this.windCleared) me.push(this.windType[humanRole]==='wind'?'顺风(真空波背对中心)':'逆风(真空波正对中心)'); if(me.length) L.push('你: '+me.join(' + ')); }
+    if(humanRole!=='OB'){ var me=[]; if(this.elem[humanRole]) me.push(P3.ATTR[this.elem[humanRole]].cn); if(WIND[humanRole]) me.push(WIND[humanRole]==='wind'?'顺风(背对击退源)':'逆风(正对击退源)'); if(me.length) L.push('你: '+me.join(' + ')); }
     if(this.kind==='done') L.push(this.failLog.length?('❌ 失败 ×'+this.failLog.length):'✅ 全程无伤通过','点[开始]重练');
     else if(this.lastFail) L.push('✖ '+this.lastFail);
     return L; }

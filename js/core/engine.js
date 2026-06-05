@@ -221,8 +221,21 @@ function camBasis(){
 const keys={}; let humanRole='OB'; let follow=false; let moveMode='legacy'; let playerFacing=0;   // 'OB'=观察；moveMode 两种模式移动方向都跟镜头(W=镜头前方)，区别只在角色"朝向"：legacy传统=朝移动方向 / standard现代=朝镜头
 /* ==击退(共享)== 任何机制都可触发；被击退中锁玩家输入，由 tickKB 平滑移动(玩家与NPC通用) */
 const KB={};   // role → {fx,fz,tx,tz,t,dur}
-function startKBv(role,vx,vz,dur){ const a=Scene.get(role); if(!a) return; let tx=a.pos[0]+vx, tz=a.pos[1]+vz; const m=Math.hypot(tx,tz); if(m>ARENA_R-0.6){ const s=(ARENA_R-0.6)/m; tx*=s; tz*=s; } KB[role]={fx:a.pos[0],fz:a.pos[1],tx,tz,t:0,dur:dur||0.45}; }   // 按向量击退(终点超出场地则贴边)
-function clearKB(){ for(const k in KB) delete KB[k]; }
+/* 顺风/逆风(共享)：任何击退都会(a)清除该状态 (b)按"被击退的正面/背面"改变距离。WIND[role]='wind'(顺风)|'counter'(逆风)|null；KBOUT[role]=上次因朝向错翻倍飞出场外 */
+const WIND={}, KBOUT={};
+function windScale(role,pdx,pdz){   // pdx,pdz=击退方向(单位,远离来源)；返回距离倍率并清除顺/逆风
+  if(!WIND[role]) return 1;
+  let back; if(role===humanRole){ back = (Math.sin(playerFacing)*pdx + Math.cos(playerFacing)*pdz) >= 0; }   // 面朝击退方向=背对来源=背面被击退
+  else back = (WIND[role]==='wind');   // NPC 默认正确朝向(顺风背对/逆风正对)→减半
+  const s = (WIND[role]==='wind') ? (back?0.5:2) : (back?2:0.5);   // 顺风: 背面减半/正面加倍; 逆风: 正面减半/背面加倍
+  WIND[role]=null; KBOUT[role]=(s===2);   // 受击退即清除; 加倍=飞出场外(死)
+  return s;
+}
+function startKBv(role,vx,vz,dur){ const a=Scene.get(role); if(!a) return;
+  const m0=Math.hypot(vx,vz)||1, s=windScale(role, vx/m0, vz/m0); vx*=s; vz*=s;   // 顺/逆风按朝向缩放并清除
+  let tx=a.pos[0]+vx, tz=a.pos[1]+vz; const m=Math.hypot(tx,tz); if(m>ARENA_R-0.6){ const sc=(ARENA_R-0.6)/m; tx*=sc; tz*=sc; }   // 视觉贴边(出界与否由 KBOUT 标记)
+  KB[role]={fx:a.pos[0],fz:a.pos[1],tx,tz,t:0,dur:dur||0.45}; }
+function clearKB(){ for(const k in KB) delete KB[k]; for(const k in WIND) delete WIND[k]; for(const k in KBOUT) delete KBOUT[k]; }
 function tickKB(dt){ for(const r in KB){ const k=KB[r], a=Scene.get(r); k.t+=dt; const u=Math.min(1,k.t/k.dur); if(a){ a.pos[0]=k.fx+(k.tx-k.fx)*u; a.pos[1]=k.fz+(k.tz-k.fz)*u; } if(u>=1) delete KB[r]; } }
 addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; });
 addEventListener('keyup',  e=>{ keys[e.key.toLowerCase()]=false; });
