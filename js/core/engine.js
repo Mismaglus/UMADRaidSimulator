@@ -222,13 +222,13 @@ const keys={}; let humanRole='OB'; let follow=false; let moveMode='legacy'; let 
 /* ==击退(共享)== 任何机制都可触发；被击退中锁玩家输入，由 tickKB 平滑移动(玩家与NPC通用) */
 const KB={};   // role → {fx,fz,tx,tz,t,dur}
 /* 顺风/逆风(共享)：任何击退都会(a)清除该状态 (b)按"被击退的正面/背面"改变距离。WIND[role]='wind'(顺风)|'counter'(逆风)|null；KBOUT[role]=上次因朝向错翻倍飞出场外 */
-const WIND={}, KBOUT={};
+const WIND={}, KBOUT={}; let WINDCLRN=0;   // WINDCLRN: 顺/逆风被清除的累计次数(机制据此触发风水晶 proc 龙卷风)
 function windScale(role,pdx,pdz){   // pdx,pdz=击退方向(单位,远离来源)；返回距离倍率并清除顺/逆风
   if(!WIND[role]) return 1;
   let back; if(role===humanRole){ back = (Math.sin(playerFacing)*pdx + Math.cos(playerFacing)*pdz) >= 0; }   // 面朝击退方向=背对来源=背面被击退
   else back = (WIND[role]==='wind');   // NPC 默认正确朝向(顺风背对/逆风正对)→减半
   const s = (WIND[role]==='wind') ? (back?0.5:2) : (back?2:0.5);   // 顺风: 背面减半/正面加倍; 逆风: 正面减半/背面加倍
-  WIND[role]=null; KBOUT[role]=(s===2);   // 受击退即清除; 加倍=飞出场外(死)
+  WIND[role]=null; KBOUT[role]=(s===2); WINDCLRN++;   // 受击退即清除(计数); 加倍=飞出场外(死)
   return s;
 }
 function startKBv(role,vx,vz,dur){ const a=Scene.get(role); if(!a) return;
