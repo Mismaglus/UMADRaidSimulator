@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Forsaken 脑死法 模拟器 — 阶段1</title>
+<title>UMAD 机制模拟器</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#0b0d12;font-family:system-ui,"Microsoft YaHei",sans-serif;color:#cde;}
   #gl,#overlay{position:fixed;inset:0;display:block;}
@@ -23,7 +23,10 @@
 <canvas id="gl"></canvas>
 <canvas id="overlay"></canvas>
 <div id="ui">
-  <h3>Forsaken 模拟器 · 阶段1</h3>
+  <h3>UMAD 机制模拟器</h3>
+  <div>机制：
+    <select id="mechSel"></select>
+  </div>
   <div>我的职能：
     <select id="roleSel">
       <option value="OB">OB（观察·8人自动）</option>
@@ -31,12 +34,7 @@
       <option>D1</option><option>D2</option><option>D3</option><option>D4</option>
     </select>
   </div>
-  <div>打法：
-    <select id="stratSel">
-      <option value="1234">脑死法（TH 1·2·3·4 / DPS 5·6·7·8）</option>
-      <option value="1256">1256（TH 1·2·5·6 / DPS 3·4·7·8）</option>
-    </select>
-  </div>
+  <div id="mechOpts"></div>
   <div>移动：
     <select id="moveSel">
       <option value="legacy">传统（角色面朝移动方向·S转身后退）</option>
@@ -372,13 +370,8 @@ function render(){
     const M=mModel(d.x, st.y, d.z, d.facing||0, r, 1, r);
     drawMesh(meshes[st.mesh], mMul(VP,M), d.color||st.color, d.alpha!=null?d.alpha:st.alpha);
   }
-  // 开场 AOE：从 boss 快速扩散的紫色冲击波（替代全屏闪）
-  if(typeof ENG!=='undefined' && ENG.kind==='aoe'){
-    const p=Math.min(1, ENG.t/0.9), a=Math.min(1, 2.6*(1-p));
-    if(a>0){ const rr=Math.max(0.5,p*R);
-      drawMesh(meshes.circle,  mMul(VP, mModel(0,0.04,0,0,rr,1,rr)), [0.50,0.20,0.92], 0.22*a);
-      drawMesh(meshes.annulus, mMul(VP, mModel(0,0.06,0,0,rr,1,rr)), [0.72,0.42,1.0], 0.9*a); }
-  }
+  // 机制专属"地面层"特效（不写深度，混合）：如 Forsaken 开场紫色冲击波
+  if(SIM.current && SIM.current.drawGround) SIM.current.drawGround(VP);
   // 被控职能脚下高亮环
   const me=Scene.get(humanRole);
   if(me){ drawMesh(meshes.annulus, mMul(VP, mModel(me.pos[0],0.05,me.pos[1],0,1.1,1,1.1)), COL.self, 0.9); }
@@ -388,10 +381,8 @@ function render(){
   for(const a of Scene.list()){ if((a.alpha==null||a.alpha>=1)) drawActor(VP,a); }
   if(me){ const fnx=Math.sin(playerFacing), fnz=Math.cos(playerFacing);   // 被控职能"朝向鼻子"：现代朝镜头/传统朝移动方向
     drawMesh(meshes.sphere, mMul(VP, mModel(me.pos[0]+fnx*0.85, 1.25, me.pos[1]+fnz*0.85, 0, 0.34,0.34,0.34)), COL.self, 1); }
-  // 踩塔倒计时光球（在两塔正中下落）
-  if(typeof ENG!=='undefined' && ENG.orbActive && ENG.LT && ENG.orbY>0.1){
-    for(const T of [ENG.LT, ENG.RT]) drawMesh(meshes.sphere, mMul(VP, mModel(T[0], ENG.orbY+0.6, T[1], 0, 0.75,0.75,0.75)), [1.0,0.96,0.62], 0.95);
-  }
+  // 机制专属"空中层"特效（写深度，在不透明演员之后）：如 Forsaken 踩塔倒计时光球
+  if(SIM.current && SIM.current.drawAir) SIM.current.drawAir(VP);
   gl.depthMask(false);
   for(const a of Scene.list()){ if(a.alpha!=null&&a.alpha<1) drawActor(VP,a); }
   gl.depthMask(true);
@@ -425,17 +416,8 @@ function drawOverlay(VP){
       octx.fillStyle = a.role===humanRole? '#ffe27a' : '#ffffff'; octx.fillText(a.role,s[0],s[1]); }
     if(a.marker){ const m=projHead(VP, a.pos[0], a.height+3.4, a.pos[1]); if(m) drawMarker(octx, m[0], m[1], a.marker, a.markerColor); }   // 图标放大后抬高一点,避免压住职能名
   }
-  // （不再显示过去/未来"具体锁定了谁"——读条只报 過去/未来，半场刀致命半由 halfcleave 贴花体现）
-  // BOSS 头顶读条（終焉 -7s / 消滅の脚 -6s；日文+英文；過去/未来二选一）
-  if(typeof ENG!=='undefined' && (ENG.kind==='charge'||ENG.kind==='cleave'||ENG.kind==='finalcleave')){
-    let jp,en,col;
-    if(ENG.kind==='charge'){ const past=ENG.pendingPolarity==='past'; jp=past?'過去の終焉':'未来の終焉'; en=past?"Past's End":"Future's End"; col='#b06bff'; }
-    else { jp='消滅の脚'; en='All things Ending'; col='#ff5d5d'; }
-    const prog=Math.max(0,Math.min(1, ENG.t/Math.max(0.01,ENG.subEnd))), rem=Math.max(0,ENG.subEnd-ENG.t);
-    drawCastBar(cssW/2, 48, 380, 22, jp, en, col, prog, rem);   // 屏幕顶端固定读条（跟随视角时也始终可见）
-    const ba=Scene.get('BOSS'), s=ba&&projHead(VP, ba.pos[0],(ba.height||4)+2.4, ba.pos[1]);
-    if(s) drawCastBar(s[0], s[1], 250, 15, jp, en, col, prog, rem);   // boss 头顶读条
-  }
+  // 机制专属 2D 叠加（如 Forsaken 的 boss 读条/顶端读条）
+  if(SIM.current && SIM.current.drawHud) SIM.current.drawHud(octx, VP);
   // HUD（右上）
   octx.textAlign='right'; octx.textBaseline='top'; octx.font='12px ui-monospace,monospace'; octx.fillStyle='#9fb3c8';
   let y=10; for(const line of Scene.getHUD()){ octx.fillText(line, cssW-12, y); y+=16; }
@@ -549,8 +531,8 @@ function shuffleR(a,rng){for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*
 function inCone(p,ax,az,facing,range){ const dx=p[0]-ax, dz=p[1]-az, d=Math.hypot(dx,dz); if(d>range||d<0.05) return false;
   let da=((Math.atan2(dx,dz)-facing+Math.PI)%TAU+TAU)%TAU-Math.PI; return Math.abs(da)<=Math.PI/4; }   // 90°扇=±45°
 
-/* ==ENGINE== 脑死法时间轴 + NPC 自动走位（仅通过 Scene.* 驱动渲染） */
-const ENG={ phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
+/* ==机制：P2 Forsaken== 脑死法时间轴 + NPC 自动走位（实现统一机制接口：init/update/drawGround/drawAir/drawHud/mountOptions/reset，仅通过 Scene.* 驱动渲染） */
+const FORSAKEN={ id:'p2_forsaken', name:'P2 弗赛肯 Forsaken', phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
   rng:null, seed:1, rotationDir:1, coneJob:'TH', pendingPolarity:null,
   players:{}, LT:null, RT:null, towersActive:false, chargeRingActive:false, clonesActive:false, cleaveActive:false, cleaveFacing:0,
   orbT:0, orbTotal:1, orbY:0, orbActive:false, fxAoes:[], fxT:0, cleaveFxT:0, aoeFlash:0, bossFacing:0, cleaveTarget:null,
@@ -792,20 +774,87 @@ const ENG={ phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
     if(this.paused) L.push('⏸ 已暂停'+(this.lastFail?('  ✖ '+this.lastFail):''));
     if(this.phase==='done') L.push(this.win?'✅ 通关（全员清层）':('❌ 失败 ×'+this.failLog.length));
     Scene.setHUD(L);
+  },
+  /* ===== 统一机制接口 ===== */
+  reset(){   // 切到本机制 / 待命预览：复位场景到开局列队、清贴花，phase=idle（点开始才 init 运行）
+    this.phase='idle'; this.round=0; this.kind=''; this.t=0; this.subEnd=0;
+    this.despawnClones(); this.towersActive=false; this.chargeRingActive=false; this.cleaveActive=false;
+    this.orbActive=false; this.orbY=0; this.fxT=0; this.cleaveFxT=0; this.pendingPolarity=null;
+    ALL.forEach((r,i)=>{ const a=Scene.get(r); if(a){ a.pos=[i<4?-2.6:2.6,[-9,-11,-13,-15][i%4]]; a.marker=null; } });
+    Scene.setDecals([]); this.setHUD();
+  },
+  drawGround(VP){   // 开场 AOE：从 boss 快速扩散的紫色冲击波（地面层，不写深度）
+    if(this.kind!=='aoe') return;
+    const p=Math.min(1, this.t/0.9), a=Math.min(1, 2.6*(1-p));
+    if(a>0){ const rr=Math.max(0.5,p*R);
+      drawMesh(meshes.circle,  mMul(VP, mModel(0,0.04,0,0,rr,1,rr)), [0.50,0.20,0.92], 0.22*a);
+      drawMesh(meshes.annulus, mMul(VP, mModel(0,0.06,0,0,rr,1,rr)), [0.72,0.42,1.0], 0.9*a); }
+  },
+  drawAir(VP){   // 踩塔倒计时光球（在两塔正中下落，空中层，写深度）
+    if(this.orbActive && this.LT && this.orbY>0.1){
+      for(const T of [this.LT, this.RT]) drawMesh(meshes.sphere, mMul(VP, mModel(T[0], this.orbY+0.6, T[1], 0, 0.75,0.75,0.75)), [1.0,0.96,0.62], 0.95);
+    }
+  },
+  drawHud(octx, VP){   // boss 头顶 + 屏幕顶端读条（終焉 -7s / 消滅の脚 -6s）
+    if(this.kind==='charge'||this.kind==='cleave'||this.kind==='finalcleave'){
+      let jp,en,col;
+      if(this.kind==='charge'){ const past=this.pendingPolarity==='past'; jp=past?'過去の終焉':'未来の終焉'; en=past?"Past's End":"Future's End"; col='#b06bff'; }
+      else { jp='消滅の脚'; en='All things Ending'; col='#ff5d5d'; }
+      const prog=Math.max(0,Math.min(1, this.t/Math.max(0.01,this.subEnd))), rem=Math.max(0,this.subEnd-this.t);
+      drawCastBar(cssW/2, 48, 380, 22, jp, en, col, prog, rem);   // 顶端固定读条（跟随视角也可见）
+      const ba=Scene.get('BOSS'), s=ba&&projHead(VP, ba.pos[0],(ba.height||4)+2.4, ba.pos[1]);
+      if(s) drawCastBar(s[0], s[1], 250, 15, jp, en, col, prog, rem);   // boss 头顶读条
+    }
+  },
+  mountOptions(el){   // 机制专属 UI：打法（脑死法 / 1256）
+    el.innerHTML = '<div>打法：<select id="stratSel">'
+      + '<option value="1234">脑死法（TH 1·2·3·4 / DPS 5·6·7·8）</option>'
+      + '<option value="1256">1256（TH 1·2·5·6 / DPS 3·4·7·8）</option>'
+      + '</select></div>';
+    const self=this;
+    $('stratSel').value = (ROUND===ROUND_1256?'1256':'1234');
+    $('stratSel').addEventListener('change', e=>{ ROUND=STRATS[e.target.value]||ROUND_1234; self.init(parseInt($('seedInp').value)||1); $('pauseBtn').textContent='暂停'; });   // 切换打法→重置本把
   }
 };
-Scene.onTick = (dt)=>ENG.update(dt);
 
-/* 引擎 UI 接线 */
+/* ==机制：P3 一运（占位，机制待实现）== 实现同一接口，便于切换演示 */
+const YIYUN={ id:'p3_yiyun', name:'P3 一运（待实现）', phase:'idle', round:0, kind:'', t:0, subEnd:1,
+  seed:1, paused:false, pauseOnFail:true, timeScale:1, win:false, lastFail:'', failLog:[],
+  reset(){ this.phase='idle'; for(let i=0;i<3;i++) Scene.removeActor('C'+i);   // 清掉上一个机制可能残留的分身
+    ALL.forEach((r,i)=>{ const a=Scene.get(r), ang=i/8*TAU; if(a){ a.pos=[Math.cos(ang)*10, Math.sin(ang)*10]; a.marker=null; } });
+    const d=[]; const bb=Scene.get('BOSS'); if(bb) d.push({type:'bossring',x:bb.pos[0],z:bb.pos[1],radius:6}); Scene.setDecals(d);
+    this.setHUD(); },
+  init(seed){ this.seed=seed>>>0; this.reset(); },   // 机制未实现：开始=复位预览
+  update(dt){ this.setHUD(); },
+  setHUD(){ Scene.setHUD([ (humanRole==='OB'?'OB 观察':'我: '+humanRole)+'   种子: '+this.seed, 'P3 一运 — 机制待实现 (WIP)', '在「机制」下拉可切回 P2 Forsaken' ]); }
+};
+
+/* ==机制注册表 + 切换器== 共享核心(渲染/相机/移动/主循环/AOE图元)只维护一份；每个机制是注册表里实现统一接口的对象 */
+const SIM={
+  mechs:{}, order:[], current:null,
+  register(m){ this.mechs[m.id]=m; this.order.push(m); },
+  select(id){ const m=this.mechs[id]; if(!m) return; this.current=m;
+    m.mountOptions ? m.mountOptions($('mechOpts')) : ($('mechOpts').innerHTML='');
+    m.reset();   // 切换=复位到该机制待命预览（点开始才运行）
+    const pb=$('pauseBtn'); if(pb) pb.textContent='暂停';
+  }
+};
+SIM.register(FORSAKEN); SIM.register(YIYUN);
+Scene.onTick = (dt)=>{ if(SIM.current) SIM.current.update(dt); };
+
+/* 引擎 UI 接线（全部走 SIM.current = 当前机制） */
 const $=id=>document.getElementById(id);
 $('startBtn').addEventListener('click',()=>{ if($('randSeed').checked) $('seedInp').value=Math.floor(Math.random()*1e9);   // 随机种子开：每次开始换新种子
-  ENG.pauseOnFail=$('pofChk').checked; ENG.timeScale=parseFloat($('tsSel').value)||1; ENG.init(parseInt($('seedInp').value)||1); $('pauseBtn').textContent='暂停'; });
-$('pauseBtn').addEventListener('click',e=>{ if(ENG.phase!=='run') return; ENG.paused=!ENG.paused; e.target.textContent=ENG.paused?'继续':'暂停'; });
-$('stepBtn').addEventListener('click',()=>{ if(ENG.phase==='run'){ ENG.paused=false; ENG.t=ENG.subEnd; $('pauseBtn').textContent='暂停'; } });
+  const m=SIM.current; m.pauseOnFail=$('pofChk').checked; m.timeScale=parseFloat($('tsSel').value)||1; m.init(parseInt($('seedInp').value)||1); $('pauseBtn').textContent='暂停'; });
+$('pauseBtn').addEventListener('click',e=>{ const m=SIM.current; if(m.phase!=='run') return; m.paused=!m.paused; e.target.textContent=m.paused?'继续':'暂停'; });
+$('stepBtn').addEventListener('click',()=>{ const m=SIM.current; if(m.phase==='run'){ m.paused=false; m.t=m.subEnd; $('pauseBtn').textContent='暂停'; } });
 $('reseedBtn').addEventListener('click',()=>{ $('seedInp').value=Math.floor(Math.random()*1e9); });
-$('stratSel').addEventListener('change',e=>{ ROUND=STRATS[e.target.value]||ROUND_1234; ENG.init(parseInt($('seedInp').value)||1); $('pauseBtn').textContent='暂停'; });   // 切换打法→重置本把
-$('pofChk').addEventListener('change',e=>{ ENG.pauseOnFail=e.target.checked; });
-$('tsSel').addEventListener('change',e=>{ ENG.timeScale=parseFloat(e.target.value)||1; });
+$('pofChk').addEventListener('change',e=>{ SIM.current.pauseOnFail=e.target.checked; });
+$('tsSel').addEventListener('change',e=>{ SIM.current.timeScale=parseFloat(e.target.value)||1; });
+// 机制下拉：填充 + 切换
+SIM.order.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name; $('mechSel').appendChild(o); });
+$('mechSel').addEventListener('change',e=>SIM.select(e.target.value));
+SIM.select(FORSAKEN.id);   // 启动默认机制（待命预览，点开始才运行）
 $('moveSel').addEventListener('change',e=>{ moveMode=e.target.value; });   // 传统/现代 移动模式
 function syncSeedLock(){ const on=$('randSeed').checked; $('seedInp').disabled=on; $('reseedBtn').disabled=on; }   // 随机种子开 → 锁定种子输入框
 $('randSeed').addEventListener('change',syncSeedLock); syncSeedLock();
