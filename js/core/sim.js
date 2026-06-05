@@ -4,7 +4,8 @@ const SIM={
   mechs:{}, order:[], current:null,
   register(m){ this.mechs[m.id]=m; this.order.push(m); },
   select(id){ const m=this.mechs[id]; if(!m) return; this.current=m;
-    clearKB(); ARENA_R = m.arenaR||R; cam.dist=clamp(ARENA_R*1.85,12,90);   // 适配场地大小的默认视距
+    clearKB(); const _bb=Scene.get('BOSS'); if(_bb) _bb.pos=[0,0];   // 复位 boss 到中心(某些机制如本影爆碎会移动它)
+    ARENA_R = m.arenaR||R; cam.dist=clamp(ARENA_R*1.85,12,90);   // 适配场地大小的默认视距
     m.mountOptions ? m.mountOptions($('mechOpts')) : ($('mechOpts').innerHTML='');
     m.reset();   // 切换=复位到该机制待命预览（点开始才运行）
     const pb=$('pauseBtn'); if(pb) pb.textContent='暂停';
