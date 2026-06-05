@@ -831,6 +831,7 @@ const P3 = {
   spawnCrystal(id,attr,pos){ Scene.addActor({id,kind:'crystal',role:'',pos:pos.slice(),color:this.ATTR[attr].col,radius:1.3,height:3.4,alpha:1,attr}); },
   ringActors(rad){ ALL.forEach((r,i)=>{ const a=Scene.get(r), ang=i/8*TAU-Math.PI/2; if(a){ a.pos=[Math.cos(ang)*rad, Math.sin(ang)*rad]; a.marker=null; } }); },
   nearest(x,z,pool){ let best=null,bd=1e18; for(const r of (pool||ALL)){ const p=Scene.get(r).pos, dx=p[0]-x, dz=p[1]-z, d=dx*dx+dz*dz; if(d<bd){bd=d;best=r;} } return best; },
+  nearestN(x,z,n,pool){ return (pool||ALL).slice().sort((a,b)=>{const pa=Scene.get(a).pos,pb=Scene.get(b).pos; return (Math.hypot(pa[0]-x,pa[1]-z))-(Math.hypot(pb[0]-x,pb[1]-z));}).slice(0,n); },   // 最近 n 人(按到 x,z 距离)
   farthest(x,z,pool){ let best=null,bd=-1; for(const r of (pool||ALL)){ const p=Scene.get(r).pos, dx=p[0]-x, dz=p[1]-z, d=dx*dx+dz*dz; if(d>bd){bd=d;best=r;} } return best; },
   pick(rng,arr,n){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;} return a.slice(0,n); },
   hitCircle(p,x,z,r){ return Math.hypot(p[0]-x,p[1]-z)<=r; },
@@ -869,12 +870,13 @@ const P3_FIRE = p3mech({ id:'p3_fire', name:'混沌之炎（火）',
   tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.resolve(); if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
   resolve(){ this.kind='hit'; const aoes=[];
     this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.42}); });
-    const tgt=P3.nearest(this.crPos[0],this.crPos[1]); const tp=Scene.get(tgt).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4});
-    this.blazeTgt=tgt; this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); },
+    this.blazeTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 火水晶点名最近2人，各放一个10m环形烈焰
+    this.blazeTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4}); });
+    this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之炎（火）  场地30m  种子:'+this.seed];
-    if(this.kind==='warn') L.push('火点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 5m 圆(+4s魔易)；火水晶→最近玩家 10m 环形【烈焰】(中心安全,会击退)');
-    else L.push('烈焰命中最近: '+this.blazeTgt, this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
+    if(this.kind==='warn') L.push('火点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 5m 圆(+4s魔易)；火水晶→最近2人 各 10m 环形【烈焰】(中心安全,会击退)');
+    else L.push('烈焰命中最近2人: '+(this.blazeTgt||[]).join(','), this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
 /* 混沌之水：N人水debuff→到期各放10m环形(中心安全)；水水晶→最近玩家5m圆【海啸】 */
@@ -884,12 +886,13 @@ const P3_WATER = p3mech({ id:'p3_water', name:'混沌之水（水）',
   tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.resolve(); if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
   resolve(){ this.kind='hit'; const aoes=[];
     this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.4}); });
-    const tgt=P3.nearest(this.crPos[0],this.crPos[1]); const tp=Scene.get(tgt).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44});
-    this.tsuTgt=tgt; this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); },
+    this.tsuTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 水水晶点名最近2人，各放一个5m圆海啸
+    this.tsuTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44}); });
+    this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之水（水）  场地30m  种子:'+this.seed];
-    if(this.kind==='warn') L.push('水点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 10m 环形(中心安全)；水水晶→最近玩家 5m 圆【海啸】(+4s魔易)');
-    else L.push('海啸命中最近: '+this.tsuTgt, this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
+    if(this.kind==='warn') L.push('水点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 10m 环形(中心安全)；水水晶→最近2人 各 5m 圆【海啸】(+4s魔易)');
+    else L.push('海啸命中最近2人: '+(this.tsuTgt||[]).join(','), this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
 
