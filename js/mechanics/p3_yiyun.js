@@ -106,11 +106,10 @@ const P3_WIND = p3mech({ id:'p3_wind', name:'混沌之顺风 / 逆风', attr:'wi
     if(humanRole!=='OB' && this.flewOut.indexOf(humanRole)>=0) this.fail('('+humanRole+') 朝向错误→击退翻倍飞出场外=死');
     this.kbEnd=this.t+0.6;
   },
-  doTornado(){ this.kind='tornado'; this.windTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 连锁风水晶→点名最近2人
-    const a=Scene.get(this.windTgt[0]).pos, b=Scene.get(this.windTgt[1]).pos, cx=(a[0]+b[0])/2, cz=(a[1]+b[1])/2;
-    this.fxAoes=[{type:'stack',x:cx,z:cz,radius:6,color:P3.ATTR.wind.col,alpha:0.42}]; this.fxT=1.6;
-    let n=0; for(const r of ALL){ const p=Scene.get(r).pos; if(Math.hypot(p[0]-cx,p[1]-cz)<=6) n++; } this.tornadoN=n;
-    if(humanRole!=='OB' && n<2) this.fail('龙卷风分摊不足2人('+n+')→伤害暴涨');
+  doTornado(){ this.kind='tornado'; this.windTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 连锁风水晶→点名最近2人, 各放一个6m龙卷风(2人分摊)
+    this.fxAoes=this.windTgt.map(r=>{ const p=Scene.get(r).pos; return {type:'stack',x:p[0],z:p[1],radius:6,color:P3.ATTR.wind.col,alpha:0.42}; }); this.fxT=1.8;
+    this.dbl=[]; for(const r of ALL){ const p=Scene.get(r).pos, inN=this.fxAoes.filter(a=>Math.hypot(p[0]-a.x,p[1]-a.z)<=a.radius).length; if(inN>=2) this.dbl.push(r); }   // 同时在>=2个龙卷风里 = 同时吃两个风分摊 = 即死
+    if(humanRole!=='OB' && this.dbl.indexOf(humanRole)>=0) this.fail('('+humanRole+') 同时吃到 2 个龙卷风分摊 = 即死');
   },
   buffsOf(role){ if((this.kind==='warn'||this.kind==='knock') && this.wtype){ const w=this.wtype[role];
       if(w) return [{label:w==='wind'?'顺风':'逆风', color:w==='wind'?[0.45,0.9,0.55]:[0.55,0.8,0.98], rem:this.kind==='warn'?Math.max(0,this.subEnd-this.t):0, kind:'debuff'}]; }
@@ -119,9 +118,9 @@ const P3_WIND = p3mech({ id:'p3_wind', name:'混沌之顺风 / 逆风', attr:'wi
   hudLines(){ const L=['P3·一运 — 混沌之顺风/逆风  场地30m  种子:'+this.seed];
     if(this.kind==='warn'){ L.push('全员: 顺风=背对中心 / 逆风=正对中心   '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 后中心击退');
       if(humanRole!=='OB') L.push('你: '+(this.wtype[humanRole]==='wind'?'顺风 → 背对中心(后背朝boss)':'逆风 → 正对中心(面朝boss)'));
-      L.push('朝向错→击退翻倍飞出场外=死；被击退后风水晶点最近2人分摊龙卷风'); }
+      L.push('对向(减半)留场内/反向(加倍)飞出场=死；清风后风水晶在最近2人各放1个6m龙卷风'); }
     else if(this.kind==='knock') L.push('击退中…(被击退即清除顺风/逆风)');
-    else L.push('龙卷风(6m双人分摊)→最近2人: '+(this.windTgt||[]).join(','), '分摊圈内 '+(this.tornadoN||0)+' 人'+((this.tornadoN||0)<2?' (不足!)':''), (this.flewOut&&this.flewOut.length?('飞出场外: '+this.flewOut.join(',')):'点[开始]重练(随机顺风/逆风+水晶位)'));
+    else L.push('龙卷风(6m双摊)×2 → '+(this.windTgt||[]).join(' / ')+' 各一个', '两圈别重叠! 同时吃2个分摊=即死'+((this.dbl&&this.dbl.length)?('  ✖双吃: '+this.dbl.join(',')):''), (this.flewOut&&this.flewOut.length?('飞出场外: '+this.flewOut.join(',')):'点[开始]重练(随机顺风/逆风+水晶位)'));
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
 /* 经度/纬度聚爆：boss 中心两波 90°十字扇。经度=先前后(N/S)→左右(E/W); 纬度=先左右→前后 */
@@ -301,8 +300,10 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
     if(this.burstTele===1){ var V=[0,Math.PI],H=[Math.PI/2,Math.PI*1.5]; (this.burstHoriz?H:V).forEach(f=>d.push({type:'cone',x:0,z:0,facing:f,radius:this.arenaR,color:[1,0.5,0.12],alpha:0.12})); }
     if(this.shockOn && this.shockN<8){ var sA=d2r(this.shockStart+this.shockDir*45*this.shockN), into=this.t-(this.shockNextT-2), ss=this.arenaR-(this.arenaR-this.shockSEND)*Math.max(0,Math.min(1,into/2));
       d.push({type:'sweepseg',ang:sA,s:ss,R:this.arenaR,color:[0.12,0.34,0.82],alpha:0.26}); }   // 场边波从边缘推进(clip在场地)
-    if(this._tornadoAt && this.t>=this._tornadoAt){ this._tornadoAt=0; var wa=P3.nearestN(this.crystalPos.wind[0],this.crystalPos.wind[1],2), a=Scene.get(wa[0]).pos, b=Scene.get(wa[1]).pos; this._torC=[(a[0]+b[0])/2,(a[1]+b[1])/2]; this._torUntil=this.t+1.6; }
-    if(this._torUntil && this.t<this._torUntil) d.push({type:'stack',x:this._torC[0],z:this._torC[1],radius:6,color:P3.ATTR.wind.col,alpha:0.42});
+    if(this._tornadoAt && this.t>=this._tornadoAt){ this._tornadoAt=0; var wa=P3.nearestN(this.crystalPos.wind[0],this.crystalPos.wind[1],2);
+      this._torC=wa.map(r=>Scene.get(r).pos.slice()); this._torUntil=this.t+1.8;   // 风水晶在最近2人各放1个6m龙卷风
+      if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos, inN=this._torC.filter(c=>Math.hypot(me[0]-c[0],me[1]-c[1])<=6).length; if(inN>=2) this.fail('('+humanRole+') 同时吃2个龙卷风分摊=即死'); } }
+    if(this._torUntil && this.t<this._torUntil) this._torC.forEach(c=>d.push({type:'stack',x:c[0],z:c[1],radius:6,color:P3.ATTR.wind.col,alpha:0.42}));
   },
   buffsOf(role){ var out=[], e=this.elem&&this.elem[role];
     if(e){ var rem = (this.t19&&this.t19.indexOf(role)>=0)?19-this.t:((this.t46&&this.t46.indexOf(role)>=0)?46-this.t:0); if(rem>0) out.push({label:P3.ATTR[e].cn,color:P3.ATTR[e].col,rem:rem,kind:'debuff'}); }
