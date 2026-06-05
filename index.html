@@ -532,7 +532,7 @@ function inCone(p,ax,az,facing,range){ const dx=p[0]-ax, dz=p[1]-az, d=Math.hypo
   let da=((Math.atan2(dx,dz)-facing+Math.PI)%TAU+TAU)%TAU-Math.PI; return Math.abs(da)<=Math.PI/4; }   // 90°扇=±45°
 
 /* ==机制：P2 Forsaken== 脑死法时间轴 + NPC 自动走位（实现统一机制接口：init/update/drawGround/drawAir/drawHud/mountOptions/reset，仅通过 Scene.* 驱动渲染） */
-const FORSAKEN={ id:'p2_forsaken', name:'P2 弗赛肯 Forsaken', phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
+const FORSAKEN={ id:'p2_forsaken', name:'P2 遗弃末世 Forsaken', phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
   rng:null, seed:1, rotationDir:1, coneJob:'TH', pendingPolarity:null,
   players:{}, LT:null, RT:null, towersActive:false, chargeRingActive:false, clonesActive:false, cleaveActive:false, cleaveFacing:0,
   orbT:0, orbTotal:1, orbY:0, orbActive:false, fxAoes:[], fxT:0, cleaveFxT:0, aoeFlash:0, bossFacing:0, cleaveTarget:null,
