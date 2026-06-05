@@ -14,11 +14,12 @@ const P3 = {
   pick(rng,arr,n){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;} return a.slice(0,n); },
   hitCircle(p,x,z,r){ return Math.hypot(p[0]-x,p[1]-z)<=r; },
   hitDonut(p,x,z,r){ const d=Math.hypot(p[0]-x,p[1]-z); return d>=r*0.34 && d<=r; },   // 0.34=donut 内半径比例(与 meshes.donut 一致)
-  knockFrom(aoes){ const owners=new Set(aoes.filter(a=>a.kb&&a.owner).map(a=>a.owner));   // 被点者(AOE中心/击退源)自己不被击退, 只击退圈里的"其他人"
+  knockFrom(aoes){ const owners=new Set(aoes.filter(a=>a.kb&&a.owner).map(a=>a.owner)), log=[];   // 被点者(AOE中心/击退源)自己不被击退, 只击退圈里的"其他人"
     for(const r of ALL){ if(owners.has(r)) continue; const p=Scene.get(r).pos; let vx=0,vz=0;
       for(const ao of aoes){ if(!ao.kb) continue; const ins=ao.type==='donut'?this.hitDonut(p,ao.x,ao.z,ao.radius):this.hitCircle(p,ao.x,ao.z,ao.radius);
         if(ins){ let dx=p[0]-ao.x, dz=p[1]-ao.z, d=Math.hypot(dx,dz)||1; vx+=dx/d*(ao.kbDist||10); vz+=dz/d*(ao.kbDist||10); } }   // 被点者=AOE中心(ao.x,ao.z)=击退源, 其他人向外被推
-      if(vx||vz) startKBv(r,vx,vz); } }
+      if(vx||vz){ startKBv(r,vx,vz); log.push(r+'('+Math.round(Math.hypot(vx,vz))+'m)'); } }
+    return log; }   // 返回被击退者列表(供 HUD 实时显示"击退:..."作为运行证明)
 };
 /* 统一机制接口的基底：子机制提供 setup()/tick()/hudLines()/extra()/resolve() */
 function p3mech(def){
@@ -66,11 +67,11 @@ const P3_FIRE = p3mech({ id:'p3_fire', name:'混沌之炎（火）', attr:'fire'
     const fv=ALL.filter(r=>this.blazeTgt.indexOf(r)<0 && this.marked.indexOf(r)<0);   // 演示: 把其他人摆进烈焰环(每被点者旁2人,朝中心侧6m=落在环上)→被推向中心,清晰可见
     fv.forEach((r,i)=>{ const tp=Scene.get(this.blazeTgt[i%2]).pos, m=Math.hypot(tp[0],tp[1])||1, ix=-tp[0]/m, iz=-tp[1]/m, pp=(Math.floor(i/2)-0.5)*3; Scene.get(r).pos=[tp[0]+ix*6 - iz*pp, tp[1]+iz*6 + ix*pp]; });
     this.blazeTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:15,owner:r}); });   // 被点者=环中心(击退源,自己不被击退), 环里其他人向外
-    this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); P3.knockFrom(aoes); },
+    this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); this.kbLog=P3.knockFrom(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之炎（火）  场地30m  种子:'+this.seed];
     if(this.kind==='warn') L.push('火点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 5m 圆(+4s魔易)；火水晶→最近2人 各 10m 环形【烈焰】(中心安全,会击退)');
-    else L.push('烈焰命中最近2人: '+(this.blazeTgt||[]).join(','), this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
+    else L.push('烈焰命中最近2人: '+(this.blazeTgt||[]).join(','), '击退(环内其他人飞离被点者): '+((this.kbLog&&this.kbLog.length)?this.kbLog.join(' '):'无'), this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
 /* 混沌之水：N人水debuff→到期各放10m环形(中心安全)；水水晶→最近玩家5m圆【海啸】 */
@@ -87,11 +88,11 @@ const P3_WATER = p3mech({ id:'p3_water', name:'混沌之水（水）', attr:'wat
     const wv=ALL.filter(r=>this.tsuTgt.indexOf(r)<0 && this.marked.indexOf(r)<0);   // 演示: 把其他人摆进海啸圈(每被点者旁2人,朝中心侧3m)→被推向中心,清晰可见
     wv.forEach((r,i)=>{ const tp=Scene.get(this.tsuTgt[i%2]).pos, m=Math.hypot(tp[0],tp[1])||1, ix=-tp[0]/m, iz=-tp[1]/m, pp=(Math.floor(i/2)-0.5)*2.4; Scene.get(r).pos=[tp[0]+ix*3 - iz*pp, tp[1]+iz*3 + ix*pp]; });
     this.tsuTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:15,owner:r}); });
-    this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); P3.knockFrom(aoes); },
+    this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); this.kbLog=P3.knockFrom(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之水（水）  场地30m  种子:'+this.seed];
     if(this.kind==='warn') L.push('水点名: '+this.marked.join(' / ')+'    '+Math.max(0,this.subEnd-this.t).toFixed(1)+'s 到期','到期: 本人 10m 环形(中心安全)；水水晶→最近2人 各 5m 圆【海啸】(+4s魔易)');
-    else L.push('海啸命中最近2人: '+(this.tsuTgt||[]).join(','), this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
+    else L.push('海啸命中最近2人: '+(this.tsuTgt||[]).join(','), '击退(圈内其他人飞离被点者): '+((this.kbLog&&this.kbLog.length)?this.kbLog.join(' '):'无'), this.hitSet.length?('被命中: '+this.hitSet.join(',')):'无人被命中','点[开始]重练(随机点名/水晶位)');
     if(this.lastFail) L.push('✖ '+this.lastFail); return L; }
 });
 /* 混沌之风/逆风：全员随机 风(背对击退源)/逆风(正对击退源)；boss中心击退→朝向对=正常,错=翻倍飞出场=死；
