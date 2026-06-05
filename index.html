@@ -613,14 +613,14 @@ const ENG={ phase:'idle', round:0, kind:'', t:0, subEnd:0, steps:[], stepIdx:0,
       const hMarked = inf.job==='TH';
       const stk=soak.filter(x=>P[x].shape==='stack'), cone=soak.filter(x=>P[x].shape==='cone'), circ=soak.filter(x=>P[x].shape==='circle');
       const sTw = stk.length>=2 ? [-1,1] : [1];     // 3/7轮两分摊一左一右；1/5轮单分摊→右塔
-      stk.forEach((s,i)=> set(s, inT(sTw[i], sTw[i], -1)) );   // 分摊→外侧·上(朝boss)
+      stk.forEach((s,i)=> set(s, (stk.length<2) ? inT(1,-1,-1) : inT(sTw[i], sTw[i], -1)) );   // 1/5轮单分摊→右塔"内·上(左上)"；3/7轮两分摊→各自外侧·上(朝boss)
       const host = stk[0], hostTw = sTw[0];          // 扇贴这个分摊进圈
       const oneStk=stk.length<2;
       if(oneStk){ const hpartner=ALL.find(r=>r!==host && PAIROF[r]===PAIROF[host]);   // 1/5轮：摊的搭档跟摊去同一塔(右)、另一对去左塔——搭档不拆(修D3点摊D4没跟去右塔)
         [cone,circ].forEach(arr=>{ const k=arr.indexOf(hpartner); if(k>=0){ arr.splice(k,1); arr.unshift(hpartner);
           const rest=arr.slice(1).sort((a,b)=>(LEFTMEM[b]?1:0)-(LEFTMEM[a]?1:0)); rest.forEach((r,j)=>arr[1+j]=r); } }); }   // 组首轮：余下另一对按组内奇位(左)/偶位(右)
       cone.forEach((c,i)=>{ if(i===0 && host){
-          if(oneStk) set(c, inT(hostTw, -hostTw, +1));   // 1/5轮：扇放摊塔"内·下(底侧)" → 扇朝正下打、下方接形人接
+          if(oneStk) set(c, inT(hostTw, hostTw, +1));   // 1/5轮：扇放摊塔"外·下(右下)" → 扇朝正下打、下方接形人接（与左上的分摊错开）
           else { const hp=P[host].target; set(c,[hp[0]+ox*3.6, hp[1]+oz*3.6]); } }   // 3/7轮：扇放分摊"正下方(+out)"、仍进分摊圈(凑人头) → 扇朝正下打、下方接形人接（塔放大后下移到3.6，让接形人仍是扇的最近目标）
         else set(c, inT(-hostTw, i===1?-1.75:-1.25, i===1?0.6:1.25)); });   // 1/5轮左塔双扇(另一对,已按ORDER排序)：i=1更左→靠左 / i=2→靠右(左下45°)
       circ.forEach((c,i)=>{ if(stk.length>=2) set(c, inT(1,-1,+1));   // 3/7轮：单个钢→右塔内下(远离分摊)
