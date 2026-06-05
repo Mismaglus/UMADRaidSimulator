@@ -56,13 +56,15 @@ function p3mech(def){
 const P3_FIRE = p3mech({ id:'p3_fire', name:'混沌之炎（火）', attr:'fire',
   setup(){ const di=Math.floor(this.rng()*4); this.crPos=P3.diagPos(di,this.arenaR*0.6); P3.spawnCrystal('CR0','fire',this.crPos);
     this.marked=[P3.pick(this.rng,TH,1)[0],P3.pick(this.rng,DPS,1)[0]]; this.subEnd=9; this.kind='warn';
-    const oth=ALL.filter(r=>this.marked.indexOf(r)<0);   // 演示: 火点名两人去远处(各放5m圆), 其余凑到水晶旁(让烈焰环把他们击退)
-    this.marked.forEach((r,i)=>{ this.players[r].target=[(i?1:-1)*13,-12]; });
-    oth.forEach((r,i)=>{ const a=i/oth.length*TAU; this.players[r].target=[this.crPos[0]+Math.cos(a)*4, this.crPos[1]+Math.sin(a)*4]; }); },
+    const oth=ALL.filter(r=>this.marked.indexOf(r)<0);   // 演示: 火点名两人去中心附近(各放5m圆,远离簇), 其余6人围水晶旁(让烈焰环把他们击退)
+    this.marked.forEach((r,i)=>{ this.players[r].target=[(i?1:-1)*6,0]; });
+    oth.forEach((r,i)=>{ const a=i/oth.length*TAU; this.players[r].target=[this.crPos[0]+Math.cos(a)*5, this.crPos[1]+Math.sin(a)*5]; }); },
   tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.resolve(); if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
-  resolve(){ this.kind='hit'; const aoes=[];
+  resolve(){ this.kind='hit'; const aoes=[]; ALL.forEach(r=>{ if(this.players[r]) this.players[r].target=null; });   // 清目标→被击退的人不再走回原位
     this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.42}); });
-    this.blazeTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 火水晶点名最近2人，各放一个10m环形烈焰(中心安全, 命中者被击退)
+    this.blazeTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 火水晶点名最近2人，各放一个10m环形烈焰(中心安全, 环里其他人被击退)
+    const fv=ALL.filter(r=>this.blazeTgt.indexOf(r)<0 && this.marked.indexOf(r)<0);   // 演示: 把其他人摆进烈焰环(每被点者旁2人,朝中心侧6m=落在环上)→被推向中心,清晰可见
+    fv.forEach((r,i)=>{ const tp=Scene.get(this.blazeTgt[i%2]).pos, m=Math.hypot(tp[0],tp[1])||1, ix=-tp[0]/m, iz=-tp[1]/m, pp=(Math.floor(i/2)-0.5)*3; Scene.get(r).pos=[tp[0]+ix*6 - iz*pp, tp[1]+iz*6 + ix*pp]; });
     this.blazeTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:15,owner:r}); });   // 被点者=环中心(击退源,自己不被击退), 环里其他人向外
     this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); P3.knockFrom(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'spread',x:p[0],z:p[1],radius:5,color:P3.ATTR.fire.col,alpha:0.13}); }); },
@@ -75,14 +77,16 @@ const P3_FIRE = p3mech({ id:'p3_fire', name:'混沌之炎（火）', attr:'fire'
 const P3_WATER = p3mech({ id:'p3_water', name:'混沌之水（水）', attr:'water',
   setup(){ const di=Math.floor(this.rng()*4); this.crPos=P3.diagPos(di,this.arenaR*0.6); P3.spawnCrystal('CR0','water',this.crPos);
     this.marked=[P3.pick(this.rng,TH,1)[0],P3.pick(this.rng,DPS,1)[0]]; this.subEnd=9; this.kind='warn';
-    const oth=ALL.filter(r=>this.marked.indexOf(r)<0);   // 演示: 水点名两人去远处(各放10m环), 其余凑到水晶旁(让海啸圆把他们击退)
-    this.marked.forEach((r,i)=>{ this.players[r].target=[(i?1:-1)*13,-12]; });
+    const oth=ALL.filter(r=>this.marked.indexOf(r)<0);   // 演示: 水点名两人去中心附近(各放10m环,远离簇), 其余6人围水晶旁(让海啸圆把他们击退)
+    this.marked.forEach((r,i)=>{ this.players[r].target=[(i?1:-1)*6,0]; });
     oth.forEach((r,i)=>{ const a=i/oth.length*TAU; this.players[r].target=[this.crPos[0]+Math.cos(a)*3, this.crPos[1]+Math.sin(a)*3]; }); },
   tick(){ if(this.kind==='warn'&&this.t>=this.subEnd) this.resolve(); if(this.kind==='hit'&&this.fxT<=0) this.kind='done'; },
-  resolve(){ this.kind='hit'; const aoes=[];
+  resolve(){ this.kind='hit'; const aoes=[]; ALL.forEach(r=>{ if(this.players[r]) this.players[r].target=null; });   // 清目标→被击退的人不再走回原位
     this.marked.forEach(r=>{ const p=Scene.get(r).pos; aoes.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.4}); });
-    this.tsuTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 水水晶点名最近2人，各放一个5m圆海啸(命中者被击退)
-    this.tsuTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:15,owner:r}); });   // 被点者=圆心(击退源,自己不被击退); 圆内其他人被推离被点者
+    this.tsuTgt=P3.nearestN(this.crPos[0],this.crPos[1],2);   // 水水晶点名最近2人，各放一个5m圆海啸(被点者=圆心免疫, 圈内其他人被推离)
+    const wv=ALL.filter(r=>this.tsuTgt.indexOf(r)<0 && this.marked.indexOf(r)<0);   // 演示: 把其他人摆进海啸圈(每被点者旁2人,朝中心侧3m)→被推向中心,清晰可见
+    wv.forEach((r,i)=>{ const tp=Scene.get(this.tsuTgt[i%2]).pos, m=Math.hypot(tp[0],tp[1])||1, ix=-tp[0]/m, iz=-tp[1]/m, pp=(Math.floor(i/2)-0.5)*2.4; Scene.get(r).pos=[tp[0]+ix*3 - iz*pp, tp[1]+iz*3 + ix*pp]; });
+    this.tsuTgt.forEach(r=>{ const tp=Scene.get(r).pos; aoes.push({type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:15,owner:r}); });
     this.fxAoes=aoes; this.fxT=1.6; this.judge(aoes); P3.knockFrom(aoes); },
   extra(d){ if(this.kind==='warn') this.marked.forEach(r=>{ const p=Scene.get(r).pos; d.push({type:'donut',x:p[0],z:p[1],radius:10,color:P3.ATTR.water.col,alpha:0.13}); }); },
   hudLines(){ const L=['P3·一运 — 混沌之水（水）  场地30m  种子:'+this.seed];
