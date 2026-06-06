@@ -245,7 +245,7 @@ const P3_SHOCKWAVE = p3mech({ id:'p3_shock', name:'究极冲击波（场边波·
 const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间轴）',
   onReset(){ this.fxList=[]; this.evi=0; this.shockOn=false; this.dispA=0; this.windType={}; this.elem={}; this.phaseTxt='待命'; this.steelTele=false; this.burstTele=0; this.windCleared=false; this._torUntil=0; this._tornadoAt=0; },
   setup(){ this.fxList=[]; this.evi=0; this.shockOn=false; this.t=0; this.subEnd=1e9; this.kind='run'; this.endT=73; this.phaseTxt='深层痛楚'; this._torUntil=0; this._tornadoAt=0; this._wclr=WINDCLRN; this.dsTgt='MT';
-    var ds=P3.pick(this.rng,[0,1,2,3],3).sort((a,b)=>a-b), mid=ds[1], ends=[ds[0],ds[2]]; if(this.rng()<0.5) ends.reverse();   // 3斜点, 风夹中间
+    var ds=P3.pick(this.rng,[0,1,2,3],3), empty=[0,1,2,3].find(i=>ds.indexOf(i)<0), mid=(empty+2)%4, ends=ds.filter(i=>i!==mid); if(this.rng()<0.5) ends.reverse();   // 3斜点: 风=空缺斜角正对面(=L形拐角), 火/水占剩下那对对角 (与PDF一致)
     this.crystalPos={ wind:P3.diagPos(mid,this.arenaR*0.62), fire:P3.diagPos(ends[0],this.arenaR*0.62), water:P3.diagPos(ends[1],this.arenaR*0.62) };
     P3.spawnCrystal('CRw','wind',this.crystalPos.wind); P3.spawnCrystal('CRf','fire',this.crystalPos.fire); P3.spawnCrystal('CRr','water',this.crystalPos.water);
     var t19=[P3.pick(this.rng,TH,1)[0],P3.pick(this.rng,DPS,1)[0]];                                   // 19s: 1TN+1DPS (同属性=短)
@@ -260,12 +260,12 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
     this.schedule=[
       {t:3,  lbl:'深层痛楚(全体魔法伤)', fn(){ self.addFx([{type:'spread',x:0,z:0,radius:self.arenaR,color:[0.6,0.3,0.9],alpha:0.18}],1.0); }},
       {t:12, lbl:'暴雷读条→钢铁', fn(){ self.steelTele=true; }},
-      {t:19, lbl:'钢铁(11m)+19s解除', fn(){ self.steelTele=false; self.fireSteel(); self.elemResolve(self.t19, self.shortE); }},
+      {t:20, lbl:'钢铁(11m)+20s解除', fn(){ self.steelTele=false; self.fireSteel(); self.elemResolve(self.t19, self.shortE); }},
       {t:23, lbl:'死刑→一仇坦克', fn(){ self.fireDeath(); }},
       {t:36, lbl:(self.burstHoriz?'纬度':'经度')+'聚爆读条', fn(){ self.burstTele=1; }},
       {t:38, lbl:'聚爆 第1波', fn(){ self.burstTele=0; self.fireCones(w1,1); }},
       {t:41, lbl:'聚爆 第2波', fn(){ self.fireCones(w2,2); }},
-      {t:46, lbl:'46s 解除', fn(){ self.elemResolve(self.t46, self.longE); }},
+      {t:45, lbl:'45s 解除', fn(){ self.elemResolve(self.t46, self.longE); }},
       {t:57, lbl:'真空波+本影读·究极冲击波起', fn(){ self.shockOn=true; self.shockStart=Math.floor(self.rng()*8)*45; self.shockDir=self.rng()<0.5?1:-1; self.shockHitWave=-1; self.shockSEND=-self.arenaR*0.6; self.shockAng=d2r(self.shockStart); self.shockS=self.arenaR; }},
       {t:62, lbl:'本影爆碎(距离衰减)', fn(){ self.fireUmbral(); }},
       {t:65, lbl:'真空波(击退清风)+龙卷风', fn(){ self.fireVacuum(); }}
