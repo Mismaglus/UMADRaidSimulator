@@ -78,6 +78,7 @@ function drawOverlay(VP){
     if(s){ octx.lineWidth=3; octx.strokeStyle='rgba(0,0,0,0.85)'; octx.strokeText(a.role,s[0],s[1]);
       octx.fillStyle = a.role===humanRole? '#ffe27a' : '#ffffff'; octx.fillText(a.role,s[0],s[1]); }
     if(a.marker){ const m=projHead(VP, a.pos[0], a.height+3.4, a.pos[1]); if(m) drawMarker(octx, m[0], m[1], a.marker, a.markerColor); }   // 图标放大后抬高一点,避免压住职能名
+    if(typeof WIND!=='undefined' && WIND[a.role]){ const wi=projHead(VP, a.pos[0], a.height+2.1, a.pos[1]); if(wi) drawWindIcon(octx, wi[0], wi[1], WIND[a.role]); }   // 风:头顶图标(背=背面图标→背对击退 / 面=正面图标→面对击退; 按图标朝向, 不用顺/逆风名避免本地化混淆)
   }
   // 机制专属 2D 叠加（如 Forsaken 的 boss 读条/顶端读条）
   if(SIM.current && SIM.current.drawHud) SIM.current.drawHud(octx, VP);
@@ -122,6 +123,17 @@ function drawPartyList(){
       bx+=bs+3; }
   }
   octx.restore();
+}
+/* 顺/逆风头顶图标：背=背面图标=必须背对击退源 / 面=正面图标=必须面对击退源 (本地化无关, 看图标朝向) */
+function drawWindIcon(ctx,x,y,w){ const back=(w==='wind'); const r=12, rr=4;
+  ctx.save();
+  ctx.fillStyle = back?'rgba(38,92,205,0.92)':'rgba(216,118,26,0.92)';   // 背=蓝 / 面=橙 (+字形双重区分)
+  ctx.strokeStyle='rgba(0,0,0,0.85)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-r+rr,y-r); ctx.arcTo(x+r,y-r,x+r,y+r,rr); ctx.arcTo(x+r,y+r,x-r,y+r,rr); ctx.arcTo(x-r,y+r,x-r,y-r,rr); ctx.arcTo(x-r,y-r,x+r,y-r,rr); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='bold '+(r*1.25|0)+'px system-ui,sans-serif';
+  ctx.lineWidth=2.6; ctx.strokeStyle='rgba(0,0,0,0.9)'; const g=back?'背':'面';
+  ctx.strokeText(g,x,y+1); ctx.fillStyle='#fff'; ctx.fillText(g,x,y+1);
+  ctx.restore();
 }
 /* 头顶点名图标（2D 叠加层 = 始终面向镜头）：分摊=四角星 / 扇形=尖端朝下扇 / 钢铁=环+心点 */
 function drawMarker(ctx,x,y,shape,mode){

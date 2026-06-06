@@ -1,6 +1,6 @@
 "use strict";
 /* boot.js — UI 接线 + 启动默认机制 + resize + 主循环(最后加载) */
-const BUILD='v18';  // 改 js 时连同 index.html 的 ?v= 一起 +1；面板右上角会显示，便于确认是否加载了新代码
+const BUILD='v19';  // 改 js 时连同 index.html 的 ?v= 一起 +1；面板右上角会显示，便于确认是否加载了新代码
 (function(){ const e=$('ver'); if(e) e.textContent=BUILD; })();
 $('startBtn').addEventListener('click',()=>{ if($('randSeed').checked) $('seedInp').value=Math.floor(Math.random()*1e9);   // 随机种子开：每次开始换新种子
   const m=SIM.current; m.pauseOnFail=$('pofChk').checked; m.timeScale=parseFloat($('tsSel').value)||1; m.init(parseInt($('seedInp').value)||1); $('pauseBtn').textContent='暂停'; });
