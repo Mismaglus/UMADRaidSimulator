@@ -293,7 +293,7 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
     P3.nearestN(cr[0],cr[1],2).forEach(function(r){ var tp=Scene.get(r).pos; aoes.push(elem==='fire'?{type:'donut',x:tp[0],z:tp[1],radius:10,color:[1,0.5,0.15],alpha:0.4,kb:true,kbDist:15,owner:r}:{type:'spread',x:tp[0],z:tp[1],radius:5,color:[0.3,0.7,1],alpha:0.44,kb:true,kbDist:15,owner:r}); });   // 火→烈焰(环) / 水→海啸(圆), 点最近2; 被点者=中心(击退源,自身不被击退), 圈里其他人被推离(并清其顺/逆风+按朝向改距离)
     this.addFx(aoes,1.6);
     if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos, hit=0; aoes.forEach(a=>{ if(a.type==='donut'?P3.hitDonut(me,a.x,a.z,a.radius):P3.hitCircle(me,a.x,a.z,a.radius)) hit++; }); if(hit>0) this.fail((elem==='fire'?'炎':'水')+'解除命中×'+hit+' ('+humanRole+')'); }
-    if(elem==='fire') P3.knockFrom(aoes); },   // 只有烈焰击退
+    this.kbLog=P3.knockFrom(aoes); this.kbLogT=this.t; },   // 海啸(水)与烈焰(火)都会击退圈/环内其他人(之前误写成只有火)
   fireUmbral(){ this.umbralTgt=P3.farthest(0,0); var fp=Scene.get(this.umbralTgt).pos.slice(), bb=Scene.get('BOSS'); if(bb)bb.pos=fp.slice();
     this.addFx([{type:'spread',x:fp[0],z:fp[1],radius:8,color:[0.88,0.2,0.96],alpha:0.5},{type:'donut',x:fp[0],z:fp[1],radius:16,color:[0.7,0.25,0.95],alpha:0.26},{type:'donut',x:fp[0],z:fp[1],radius:26,color:[0.55,0.3,0.9],alpha:0.15}],1.8);
     if(humanRole!=='OB'){ var me=Scene.get(humanRole).pos; if(Math.hypot(me[0]-fp[0],me[1]-fp[1])<=8) this.fail('本影核心(<8m) ('+humanRole+')'); } },
@@ -316,6 +316,7 @@ const P3_FULL = p3mech({ id:'p3_full', name:'★ 一运 · 全程（完整时间
     return out; },
   hudLines(){ var L=['P3·一运 ★全程  场地30m  种子:'+this.seed, '⏱ '+this.t.toFixed(0)+'s · '+this.phaseTxt+' · 速度可调(2×更快)'];
     if(humanRole!=='OB'){ var me=[]; if(this.elem[humanRole]) me.push(P3.ATTR[this.elem[humanRole]].cn); if(WIND[humanRole]) me.push(WIND[humanRole]==='wind'?'顺风(背对击退源)':'逆风(正对击退源)'); if(me.length) L.push('你: '+me.join(' + ')); }
+    if(this.kbLog&&this.kbLog.length&&(this.t-(this.kbLogT||-99))<5) L.push('海啸/烈焰击退: '+this.kbLog.join(' '));
     if(this.kind==='done') L.push(this.failLog.length?('❌ 失败 ×'+this.failLog.length):'✅ 全程无伤通过','点[开始]重练');
     else if(this.lastFail) L.push('✖ '+this.lastFail);
     return L; }
