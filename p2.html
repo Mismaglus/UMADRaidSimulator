@@ -3,23 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>P2 点名助手 · 1238</title>
+<title>UMAD 助手 · 踩塔 + 黑洞接线</title>
 <style>
   :root{
     --bg:#0c0f14; --panel:#161b24; --panel2:#1d2533; --line:#2b3545;
     --txt:#e8eef6; --dim:#8a99ad;
-    --share:#4aa3ff; --spread:#ffd84a; --cone:#ff8a3c;
-    --soak:#2ea043; --pad:#3a4452; --aoe:#b06bff; --next:#2f6fb0;
+    --share:#4aa3ff; --spread:#ffd84a; --cone:#ff8a3c; --soak:#2ea043; --pad:#3a4452; --aoe:#b06bff; --next:#2f6fb0;
+    --atk:#e0654a; --chn:#4aa3ff; --ban:#c77dff;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
     font-family:system-ui,"Microsoft YaHei",sans-serif;}
-  .app{display:flex;height:100vh;gap:8px;padding:8px;}
-  .result{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}      /* 左：结果 */
-  .controls{width:40%;max-width:460px;display:flex;flex-direction:column;gap:7px;min-height:0;} /* 右：按钮 */
-  .brand{font-size:clamp(11px,1.9vh,15px);color:var(--dim);font-weight:700;}
+  body{display:flex;flex-direction:column;}
 
-  /* AOE 两列 */
+  /* 顶部标签页 */
+  .tabs{display:flex;gap:6px;padding:7px 8px 0;flex:none;}
+  .tab{flex:1;text-align:center;padding:9px;border-radius:11px 11px 0 0;border:2px solid var(--line);border-bottom:none;
+    background:var(--panel);color:var(--dim);font-weight:800;font-size:clamp(15px,2.7vh,23px);cursor:pointer;}
+  .tab.on{background:var(--panel2);color:var(--txt);border-color:#46566c;}
+
+  .app{flex:1;min-height:0;display:flex;gap:8px;padding:8px;}
+  .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}        /* 结果/表 */
+  .right{width:40%;max-width:460px;display:flex;flex-direction:column;gap:8px;min-height:0;} /* 按钮 */
+  .brand{font-size:clamp(11px,1.9vh,15px);color:var(--dim);font-weight:700;}
+  .hint{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
+    border:2px dashed var(--line);border-radius:13px;color:var(--dim);
+    font-size:clamp(18px,4vh,30px);font-weight:800;line-height:1.5;}
+
+  /* ===== 踩塔 ===== */
   .aoe-pick{flex:1;min-height:0;display:flex;gap:8px;}
   .aoe-col{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;}
   .aoe-h{text-align:center;font-weight:800;font-size:clamp(13px,2.3vh,19px);line-height:1.1;}
@@ -28,39 +39,23 @@
     color:var(--txt);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
     font-weight:900;font-size:clamp(17px,3.4vh,30px);}
   .aoe-btn svg{width:clamp(28px,5.6vh,52px);height:clamp(28px,5.6vh,52px);}
-
-  /* 进度 */
   .progress{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;}
   .pcell{min-height:5.2vh;border:2px solid var(--line);border-radius:7px;background:var(--panel);
     color:var(--txt);font-size:clamp(11px,1.9vh,15px);font-weight:800;cursor:pointer;padding:1px;}
-  .pcell.aoe{border-color:var(--aoe);}
-  .pcell.soak{border-color:var(--soak);}
-  .pcell.pad{border-color:var(--pad);color:var(--dim);}
-  .pcell.set{background:var(--panel2);}
+  .pcell.aoe{border-color:var(--aoe);} .pcell.soak{border-color:var(--soak);}
+  .pcell.pad{border-color:var(--pad);color:var(--dim);} .pcell.set{background:var(--panel2);}
   .pcell.cur{box-shadow:0 0 0 3px #fff inset;background:var(--panel2);color:var(--txt);}
-
   .read-label{font-size:clamp(13px,2.3vh,18px);font-weight:800;color:var(--cone);text-align:center;}
-
   .pick{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px;}
-  .pick-btn{flex:1;min-height:0;border:3px solid var(--line);border-radius:13px;
-    background:var(--panel);color:var(--txt);cursor:pointer;
-    display:flex;align-items:center;justify-content:center;gap:14px;
+  .pick-btn{flex:1;min-height:0;border:3px solid var(--line);border-radius:13px;background:var(--panel);
+    color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:14px;
     font-size:clamp(22px,5vh,40px);font-weight:900;}
   .pick-btn svg{width:clamp(38px,8vh,72px);height:clamp(38px,8vh,72px);flex:none;}
   .pick-btn.next{border-color:var(--next);background:#13283f;}
   .bignote{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
-    border:2px dashed var(--line);border-radius:13px;color:var(--soak);font-weight:900;
-    font-size:clamp(18px,4vh,28px);}
-
-  /* 重来：大、好按 */
+    border:2px dashed var(--line);border-radius:13px;color:var(--soak);font-weight:900;font-size:clamp(18px,4vh,28px);}
   .reset button{width:100%;border:3px solid #6a4a2a;border-radius:14px;background:#241a10;
-    color:#f2cf8a;cursor:pointer;min-height:9vh;font-size:clamp(18px,3.4vh,28px);font-weight:900;}
-  /* 跳去黑洞页 */
-  .navbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:7.5vh;
-    border:3px solid #b06bff;border-radius:13px;background:#231833;color:#e7d2ff;
-    font-size:clamp(17px,3.2vh,27px);font-weight:900;text-decoration:none;cursor:pointer;}
-
-  /* 结果（左） */
+    color:#f2cf8a;cursor:pointer;min-height:8vh;font-size:clamp(18px,3.4vh,28px);font-weight:900;}
   .rhead{display:flex;flex-direction:column;}
   .rhead b{font-size:clamp(16px,3vh,26px);}
   .rhead span{font-size:clamp(11px,1.9vh,16px);color:var(--dim);margin-top:2px;}
@@ -77,13 +72,49 @@
   .rgo-tag{font-size:.52em;color:var(--dim);font-weight:700;}
   .rdiagram{flex:1;min-height:0;}
   .rdiagram svg{width:100%;height:100%;display:block;}
-  .hint{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
-    border:2px dashed var(--line);border-radius:13px;color:var(--dim);
-    font-size:clamp(18px,4vh,30px);font-weight:800;line-height:1.4;}
+
+  /* ===== 黑洞接线 ===== */
+  .rgrp{display:flex;flex-direction:column;gap:4px;}
+  .rgrp-h{font-size:clamp(12px,2vh,16px);font-weight:800;}
+  .rgrp-btns{display:flex;gap:7px;}
+  .role-btn{flex:1;min-height:7vh;border:3px solid var(--line);border-radius:12px;background:var(--panel);
+    color:var(--txt);cursor:pointer;font-size:clamp(18px,3.6vh,30px);font-weight:900;}
+  .role-btn.on{box-shadow:0 0 0 3px #fff inset;}
+  .vtog{display:flex;align-items:center;gap:7px;margin-top:2px;}
+  .vtog .vt-h{font-size:clamp(12px,2vh,16px);color:var(--dim);font-weight:700;flex:none;}
+  .vbtn{flex:1;min-height:6vh;border:2px solid var(--line);border-radius:11px;background:var(--panel);
+    color:var(--txt);cursor:pointer;font-size:clamp(15px,2.8vh,22px);font-weight:800;}
+  .vbtn.on{border-color:#2ea043;background:#11331f;box-shadow:0 0 0 2px #2ea043 inset;}
+  .vnote{font-size:clamp(10px,1.7vh,13px);color:var(--dim);line-height:1.4;}
+  .bhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .bhead b{font-size:clamp(22px,4.6vh,42px);}
+  .bhead span{font-size:clamp(11px,2vh,16px);color:var(--dim);font-weight:700;}
+  .tl{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;}
+  .tl-row{flex:1;min-height:0;display:flex;gap:8px;align-items:stretch;}
+  .tl-rname{flex:none;width:clamp(46px,7vw,72px);display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--line);border-radius:10px;background:var(--panel);
+    font-size:clamp(13px,2.4vh,19px);font-weight:900;color:var(--dim);}
+  .tl-row.active .tl-rname{color:var(--txt);}
+  .tl-waves{flex:1;min-width:0;display:flex;gap:6px;}
+  .wave{flex:1;min-width:0;border:2px solid var(--line);border-radius:10px;background:var(--panel);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;text-align:center;}
+  .wave .wv-h{font-size:clamp(11px,1.9vh,15px);color:var(--dim);font-weight:700;}
+  .wave .wv-x{font-size:clamp(11px,1.9vh,15px);color:#566;font-weight:600;}
+  .wave.catch{border-width:3px;}
+  .wave.catch .wv-h{color:var(--txt);}
+  .wave.catch .wv-g{font-size:clamp(16px,3.3vh,30px);font-weight:900;line-height:1.05;}
+  .wave.catch .wv-n{font-size:clamp(10px,1.8vh,14px);color:var(--txt);font-weight:700;line-height:1.2;}
+  .wave.hold{border-style:dashed;}
+  .wave.hold .wv-g2{font-size:clamp(14px,2.9vh,24px);font-weight:800;}
+  .wave.hold .wv-n{font-size:clamp(10px,1.7vh,13px);color:var(--dim);font-weight:600;}
+  .wave.handoff{opacity:.78;}
+  .wave.handoff .wv-g2{font-size:clamp(13px,2.7vh,21px);font-weight:800;color:#8a99ad;}
+  .wave.handoff .wv-n{font-size:clamp(10px,1.7vh,13px);color:var(--dim);font-weight:600;}
 </style>
 </head>
 <body>
 
+<!-- 图标库（踩塔头顶点名） -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="ic-share" viewBox="0 0 100 100">
     <g fill="none" stroke="#4aa3ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
@@ -102,13 +133,17 @@
   </symbol>
 </svg>
 
+<div class="tabs">
+  <button class="tab" data-mode="tower">踩塔</button>
+  <button class="tab" data-mode="blackhole">黑洞接线</button>
+</div>
 <div class="app">
-  <div class="result" id="resultPanel"></div>
-  <div class="controls" id="ctrlPanel"></div>
+  <div class="left" id="leftPanel"></div>
+  <div class="right" id="rightPanel"></div>
 </div>
 
 <script>
-/* 踩塔站位：值为字符串=单点位；数组=[左①,右②] 两点位（左1右2：1号左 2号右） */
+/* ================= 踩塔数据 ================= */
 const SOAK = {
   1:{'分摊':'右塔 · 上沿', '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
   2:{'钢铁':[{loc:'左塔 · 左下'},{loc:'右塔 · 右下'}], '扇形':[{loc:'左塔 · 中轴线顶部'},{loc:'右塔 · 中轴线顶部'}]},
@@ -119,68 +154,93 @@ const SOAK = {
   7:{'分摊':[{loc:'左塔 · 上沿（靠中）',tag:'接扇形'},{loc:'右塔 · 上沿'}], '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
   8:{'钢铁':'右塔 · 右下', '扇形':'右塔 · 中轴线顶部'},
 };
-const SOAK_TOWERS = {A:[1,2,3,8], B:[4,5,6,7]};
-const FINAL_SOAK  = {A:8, B:7};
-const FIRST_SOAK  = {A:1, B:4};
-const READS = { A:{0:1, 1:2, 2:3, 3:8}, B:{0:4, 4:5, 5:6, 6:7} };
-const SHAPE = {
-  '分摊':{color:'#4aa3ff', sym:'ic-share'},
-  '钢铁':{color:'#ffd84a', sym:'ic-spread'},
-  '扇形':{color:'#ff8a3c', sym:'ic-cone'},
-};
-const POS = {
+const SOAK_TOWERS={A:[1,2,3,8], B:[4,5,6,7]}, FINAL_SOAK={A:8,B:7}, FIRST_SOAK={A:1,B:4};
+const READS={A:{0:1,1:2,2:3,3:8}, B:{0:4,4:5,5:6,6:7}};
+const SHAPE={'分摊':{color:'#4aa3ff',sym:'ic-share'}, '钢铁':{color:'#ffd84a',sym:'ic-spread'}, '扇形':{color:'#ff8a3c',sym:'ic-cone'}};
+const POS={
   '右塔 · 上沿':{x:320,y:138}, '右塔 · 右下':{x:349,y:224}, '左塔 · 左下':{x:131,y:224},
   '右塔 · 中轴线顶部':{x:320,y:152}, '左塔 · 中轴线顶部':{x:160,y:152}, '右塔 · 右边':{x:396,y:195},
   '右塔 · 上沿（塔外）':{x:320,y:108}, '左塔 · 上沿（靠中）':{x:188,y:146},
 };
-const state = {group:null, cursor:0, picks:{}};
-const $ = s=>document.querySelector(s);
-const isSoak = (g,t)=> g && SOAK_TOWERS[g].includes(t);
-function padInfo(t){
-  return (t%2===0)
-    ? {action:'引导扇形', loc:'右塔 · 右边', shape:'扇形'}
-    : {action:'处理分摊', loc:'右塔 · 上沿（塔外）', shape:'分摊'};
+const isSoak=(g,t)=> g && SOAK_TOWERS[g].includes(t);
+function padInfo(t){ return (t%2===0)?{action:'引导扇形',loc:'右塔 · 右边',shape:'扇形'}:{action:'处理分摊',loc:'右塔 · 上沿（塔外）',shape:'分摊'}; }
+function positions(t,c){ const v=SOAK[t][c]; return Array.isArray(v)?v:[{loc:v,tag:''}]; }
+
+/* ================= 黑洞数据 ================= */
+const GROUPS=[
+  {name:'攻击',color:'var(--atk)',roles:['攻击1','攻击2','攻击3']},
+  {name:'锁链',color:'var(--chn)',roles:['锁链1','锁链2','锁链3']},
+  {name:'禁止',color:'var(--ban)',roles:['禁止1','禁止2']},
+];
+const groupColor=r=>GROUPS.find(g=>g.roles.includes(r)).color;
+const ROUNDS={1:[{w:1,lines:1},{w:2,lines:2}], 2:[{w:1,lines:3},{w:2,lines:1},{w:3,lines:1}],
+  3:[{w:1,lines:3},{w:2,lines:1},{w:3,lines:1}], 4:[{w:1,lines:2},{w:2,lines:1}]};
+const PLAN={
+  std:{
+    '攻击1':{1:{catch:{1:'接这1根',2:'换位·再接1根'}}, 2:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'锁链1'}},
+    '攻击2':{1:{catch:{2:'2根·接1根'}}, 2:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'锁链2'}},
+    '攻击3':{2:{catch:{1:'3根·接1根'},toEnd:true}},
+    '锁链1':{2:{catch:{2:'接「攻击1」的线'},toEnd:true}, 3:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'禁止1'}},
+    '锁链2':{2:{catch:{3:'接「攻击2」的线'},toEnd:true}, 3:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'禁止2'}},
+    '锁链3':{3:{catch:{1:'3根·接1根'},toEnd:true}},
+    '禁止1':{3:{catch:{2:'接「锁链1」的线'},toEnd:true}, 4:{catch:{1:'2根·接1根'}}},
+    '禁止2':{3:{catch:{3:'接「锁链2」的线'},toEnd:true}, 4:{catch:{1:'2根·接1根',2:'再接这1根'}}},
+  },
+  var:{
+    '攻击1':{1:{catch:{2:'两根都你接'}}, 2:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'锁链1'}},
+    '攻击2':{1:{catch:{1:'接这1根'},handoffAt:2,takenBy:'攻击1'}, 2:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'锁链2'}},
+    '禁止1':{3:{catch:{2:'接「锁链1」的线'},toEnd:true}, 4:{catch:{2:'只接这1根'}}},
+    '禁止2':{3:{catch:{3:'接「锁链2」的线'},toEnd:true}, 4:{catch:{1:'两根都你接'}}},
+  },
+};
+const planOf=(role,v)=>(v && PLAN.var[role])?PLAN.var[role]:PLAN.std[role];
+function waveStatus(rd,w,lastW){
+  if(!rd) return 'none';
+  const cw=Object.keys(rd.catch).map(Number), minC=Math.min(...cw);
+  if(rd.catch[w]!=null) return 'catch';
+  if(rd.handoffAt===w) return 'handoff';
+  if(rd.handoffAt!=null) return (w>minC && w<rd.handoffAt)?'hold':'none';
+  return (rd.toEnd && w>minC && w<=lastW)?'hold':'none';
 }
-function positions(t,callout){ const v=SOAK[t][callout]; return Array.isArray(v)?v:[{loc:v,tag:''}]; }
+
+/* ================= 状态 + 主渲染 ================= */
+let mode = (location.hash==='#bh') ? 'blackhole' : 'tower';
+const T = {group:null, cursor:0, picks:{}};   // 踩塔
+const B = {role:null, variant:false};          // 黑洞
+const $ = s=>document.querySelector(s);
 
 function render(){
-  const g=state.group, c=state.cursor;
-  let C='', R='';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.mode===mode));
+  if(mode==='tower') renderTower(); else renderBlackhole();
+}
 
+/* ---- 踩塔 ---- */
+function renderTower(){
+  const g=T.group, c=T.cursor; let C='', R='';
   if(c===0){
-    C='<div class="brand">P2 遗弃末世 · 点名助手 ｜ 1238</div>'
+    C='<div class="brand">P2 遗弃末世 · 踩塔 ｜ 1238 近远分组</div>'
      +'<div class="read-label">开局 AOE：点初始点名（自动定组）</div>'
-     +'<div class="aoe-pick">'+aoeCol('A')+aoeCol('B')+'</div>'
-     +'<a class="navbtn" href="blackhole.html">去黑洞接线 →</a>';
+     +'<div class="aoe-pick">'+aoeCol('A')+aoeCol('B')+'</div>';
     R='<div class="rhead"><b>开场 AOE</b><span>右侧：左列分摊组 / 右列闲人组，点你的初始点名 → 一步定组+定位</span></div>'
      +'<div class="hint">在右侧选「你的组 + 初始点名」 →</div>';
   } else {
     C='<div class="brand">'+(g==='A'?'分摊组（踩 1·2·3·8）':'闲人组（踩 4·5·6·7）')+'</div>'+progressHtml();
-    if(c===8){
-      C+='<div class="pick"><div class="bignote">✅ 已是最后一塔</div></div>'
-       +'<a class="navbtn" href="blackhole.html">去黑洞接线 →</a>';
-    } else {
-      const target=READS[g][c];
+    if(c===8){ C+='<div class="pick"><div class="bignote">✅ 已是最后一塔</div></div>'; }
+    else{ const target=READS[g][c];
       if(target!==undefined){ C+='<div class="read-label">读新点名 → 塔'+target+'</div>'+pickHtml(target); }
-      else { C+='<div class="read-label">塔'+c+' · '+(isSoak(g,c)?'踩塔（最后一座·无新点名）':'垫场')+'</div>'
-              +'<div class="pick"><button class="pick-btn next" data-act="next">下一塔 ▶</button></div>'; }
-    }
+      else{ C+='<div class="read-label">塔'+c+' · '+(isSoak(g,c)?'踩塔（最后一座·无新点名）':'垫场')+'</div>'
+             +'<div class="pick"><button class="pick-btn next" data-act="next">下一塔 ▶</button></div>'; } }
     C+='<div class="reset"><button data-act="reset">↺ 重新开始</button></div>';
-
     const t=c, isFinal=(FINAL_SOAK[g]===t);
-    if(isSoak(g,t)){
-      const pick=state.picks[t];
+    if(isSoak(g,t)){ const pick=T.picks[t];
       if(pick){ const arr=positions(t,pick), dual=arr.length>1;
         R='<div class="rhead"><b>塔'+t+' · 踩塔'+(isFinal?'（最后一座）':'')+'</b>'
-          +(dual?'<span>左1右2 · 1号去左塔①、2号去右塔②</span>':(isFinal?'<span>用最近读到的点名</span>':''))+'</div>'
-          +resultHtml(pick, arr);
+          +(dual?'<span>左1右2 · 1号去左塔①、2号去右塔②</span>':(isFinal?'<span>用最近读到的点名</span>':''))+'</div>'+resultHtml(pick,arr);
       } else { R='<div class="rhead"><b>塔'+t+' · 踩塔</b></div><div class="hint">这座点名还没读<br>点进度条回去补读</div>'; }
-    } else { const p=padInfo(t);
-      R='<div class="rhead"><b>塔'+t+' · 垫场</b><span>'+p.action+'</span></div>'+resultHtml(p.shape,[{loc:p.loc,tag:''}]); }
+    } else { const p=padInfo(t); R='<div class="rhead"><b>塔'+t+' · 垫场</b><span>'+p.action+'</span></div>'+resultHtml(p.shape,[{loc:p.loc,tag:''}]); }
   }
-  $('#ctrlPanel').innerHTML=C; $('#resultPanel').innerHTML=R;
+  $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
 }
-
 function aoeCol(g){
   const target=FIRST_SOAK[g], name=(g==='A'?'分摊组':'闲人组'), sub=(g==='A'?'踩 1·2·3·8':'踩 4·5·6·7');
   let h='<div class="aoe-col"><div class="aoe-h" style="color:'+(g==='A'?'#4aa3ff':'#ff8a3c')+'">'+name+'<small>'+sub+'</small></div>';
@@ -190,40 +250,31 @@ function aoeCol(g){
   return h+'</div>';
 }
 function progressHtml(){
-  const g=state.group; let h='<div class="progress">';
+  const g=T.group; let h='<div class="progress">';
   ['AOE','1','2','3','4','5','6','7','8'].forEach((txt,k)=>{
     let cls='pcell '+(k===0?'aoe':(isSoak(g,k)?'soak':'pad'));
-    if(k>0 && isSoak(g,k) && state.picks[k]) cls+=' set';
-    if(k===state.cursor) cls+=' cur';
+    if(k>0 && isSoak(g,k) && T.picks[k]) cls+=' set';
+    if(k===T.cursor) cls+=' cur';
     h+='<button class="'+cls+'" data-cursor="'+k+'">'+txt+'</button>';
   });
   return h+'</div>';
 }
 function pickHtml(target){
   let h='<div class="pick">';
-  Object.keys(SOAK[target]).forEach(name=>{
-    const sh=SHAPE[name], on=(state.picks[target]===name)?' on':'';
+  Object.keys(SOAK[target]).forEach(name=>{ const sh=SHAPE[name], on=(T.picks[target]===name)?' on':'';
     h+='<button class="pick-btn'+on+'" data-target="'+target+'" data-cb="'+name+'" style="border-color:'+sh.color+'">'
-      +'<svg viewBox="0 0 100 100"><use href="#'+sh.sym+'"/></svg>'
-      +'<span style="color:'+sh.color+'">'+name+'</span></button>';
-  });
+      +'<svg viewBox="0 0 100 100"><use href="#'+sh.sym+'"/></svg><span style="color:'+sh.color+'">'+name+'</span></button>'; });
   return h+'</div>';
 }
 function resultHtml(shape, arr){
-  const sh=SHAPE[shape];
-  let txt;
-  if(arr.length===1){
-    txt='<div class="rgo-go"><span class="lbl">去</span><span style="color:'+sh.color+'">'+arr[0].loc+'</span>'
-      +(arr[0].tag?' <span class="rgo-tag">'+arr[0].tag+'</span>':'')+'</div>';
-  } else {
-    txt='<div class="rgo-multi">';
-    arr.forEach((p,i)=>{ txt+='<div class="rgo-line"><span class="num">'+(i+1)+'</span>'
-      +'<span style="color:'+sh.color+'">'+p.loc+'</span>'+(p.tag?' <span class="rgo-tag">'+p.tag+'</span>':'')+'</div>'; });
-    txt+='</div>';
-  }
+  const sh=SHAPE[shape]; let txt;
+  if(arr.length===1){ txt='<div class="rgo-go"><span class="lbl">去</span><span style="color:'+sh.color+'">'+arr[0].loc+'</span>'
+      +(arr[0].tag?' <span class="rgo-tag">'+arr[0].tag+'</span>':'')+'</div>'; }
+  else{ txt='<div class="rgo-multi">'; arr.forEach((p,i)=>{ txt+='<div class="rgo-line"><span class="num">'+(i+1)+'</span>'
+      +'<span style="color:'+sh.color+'">'+p.loc+'</span>'+(p.tag?' <span class="rgo-tag">'+p.tag+'</span>':'')+'</div>'; }); txt+='</div>'; }
   return '<div class="rgo"><svg class="rgo-ic" viewBox="0 0 100 100"><use href="#'+sh.sym+'"/></svg>'
     +'<div class="rgo-text"><div class="rgo-shape" style="color:'+sh.color+'">'+shape+'</div>'+txt+'</div></div>'
-    +'<div class="rdiagram">'+diagram(arr, shape)+'</div>';
+    +'<div class="rdiagram">'+diagram(arr,shape)+'</div>';
 }
 function diagram(arr, shape){
   const sh=SHAPE[shape];
@@ -245,17 +296,54 @@ function diagram(arr, shape){
     +tower(160,195,'左塔')+tower(320,195,'右塔')+mk+'</svg>';
 }
 
-document.addEventListener('click', e=>{
-  const pk=e.target.closest('[data-cb]');
-  if(pk){
-    if(pk.dataset.g){ state.group=pk.dataset.g; state.picks={}; }
-    state.picks[+pk.dataset.target]=pk.dataset.cb;
-    state.cursor=Math.min(8,state.cursor+1);
-    render(); return;
+/* ---- 黑洞 ---- */
+function renderBlackhole(){
+  let C='<div class="brand">黑洞接线 · 选号位 → 看你每轮接/持哪几根线</div>';
+  GROUPS.forEach(g=>{ C+='<div class="rgrp"><div class="rgrp-h" style="color:'+g.color+'">'+g.name+'</div><div class="rgrp-btns">';
+    g.roles.forEach(r=>{ const on=B.role===r;
+      C+='<button class="role-btn'+(on?' on':'')+'" data-role="'+r+'" style="border-color:'+g.color+(on?';background:'+g.color+'22':'')+'">'+r+'</button>'; });
+    C+='</div></div>'; });
+  C+='<div class="vtog"><span class="vt-h">接法</span><button class="vbtn'+(!B.variant?' on':'')+'" data-var="0">标准</button>'
+    +'<button class="vbtn'+(B.variant?' on':'')+'" data-var="1">变体</button></div>'
+    +'<div class="vnote">同一轮内：接线后要<b style="color:#e8eef6">持线</b>，直到被别人接走或本轮结束（跨轮重置）。变体：攻击1·2、禁止1·2 换接法。</div>';
+  let R;
+  if(!B.role){ R='<div class="hint">在右侧选你的号位<br>→ 显示你每轮接线 + 持线到哪一刻</div>'; }
+  else{
+    const plan=planOf(B.role,B.variant), col=groupColor(B.role), affected=B.variant&&PLAN.var[B.role];
+    const rds=Object.keys(plan).map(Number).sort((a,b)=>a-b);
+    R='<div class="bhead"><b style="color:'+col+'">'+B.role+'</b><span>接线轮：第 '+rds.join('·')+' 轮 · 接后持线到「被接走 / 本轮结束」'
+     +(affected?' · 变体':(B.variant?' · 变体不影响此号位':''))+'</span></div><div class="tl">';
+    for(let r=1;r<=4;r++){ const rd=plan[r], waves=ROUNDS[r], lastW=waves[waves.length-1].w;
+      R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮</div><div class="tl-waves">';
+      waves.forEach(wv=>{ const st=waveStatus(rd,wv.w,lastW);
+        if(st==='catch'){ R+='<div class="wave catch" style="border-color:'+col+';background:'+col+'26">'
+            +'<div class="wv-h" style="color:'+col+'">第'+wv.w+'次</div><div class="wv-g" style="color:'+col+'">接线</div>'
+            +'<div class="wv-n">'+rd.catch[wv.w]+'</div></div>'; }
+        else if(st==='hold'){ R+='<div class="wave hold" style="border-color:'+col+'99"><div class="wv-h">第'+wv.w+'次</div>'
+            +'<div class="wv-g2" style="color:'+col+'">保持</div><div class="wv-n">'+(wv.w===lastW?'持到本轮结束':'持线中')+'</div></div>'; }
+        else if(st==='handoff'){ R+='<div class="wave handoff"><div class="wv-h">第'+wv.w+'次</div>'
+            +'<div class="wv-g2">交出</div><div class="wv-n">「'+rd.takenBy+'」接走</div></div>'; }
+        else{ R+='<div class="wave"><div class="wv-h">第'+wv.w+'次</div><div class="wv-x">'+wv.lines+'根</div></div>'; }
+      });
+      R+='</div></div>';
+    }
+    R+='</div>';
   }
-  const nx=e.target.closest('[data-act="next"]'); if(nx){ state.cursor=Math.min(8,state.cursor+1); render(); return; }
-  const pc=e.target.closest('[data-cursor]');     if(pc){ state.cursor=+pc.dataset.cursor; render(); return; }
-  const rs=e.target.closest('[data-act="reset"]'); if(rs){ state.cursor=0; state.picks={}; render(); return; }
+  $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
+}
+
+/* ================= 事件 ================= */
+document.addEventListener('click', e=>{
+  const tab=e.target.closest('[data-mode]'); if(tab){ mode=tab.dataset.mode; render(); return; }
+  // 踩塔
+  const pk=e.target.closest('[data-cb]');
+  if(pk){ if(pk.dataset.g){ T.group=pk.dataset.g; T.picks={}; } T.picks[+pk.dataset.target]=pk.dataset.cb; T.cursor=Math.min(8,T.cursor+1); render(); return; }
+  const nx=e.target.closest('[data-act="next"]'); if(nx){ T.cursor=Math.min(8,T.cursor+1); render(); return; }
+  const pc=e.target.closest('[data-cursor]');     if(pc){ T.cursor=+pc.dataset.cursor; render(); return; }
+  const rs=e.target.closest('[data-act="reset"]'); if(rs){ T.cursor=0; T.picks={}; render(); return; }
+  // 黑洞
+  const rb=e.target.closest('[data-role]'); if(rb){ B.role=rb.dataset.role; render(); return; }
+  const vb=e.target.closest('[data-var]');  if(vb){ B.variant=vb.dataset.var==='1'; render(); return; }
 });
 render();
 </script>
