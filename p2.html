@@ -3,28 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>UMAD 助手 · 踩塔 + 黑洞接线</title>
+<title>UMAD 助手 · 踩塔 + 黑洞 + P4</title>
 <style>
   :root{
     --bg:#0c0f14; --panel:#161b24; --panel2:#1d2533; --line:#2b3545;
     --txt:#e8eef6; --dim:#8a99ad;
     --share:#4aa3ff; --spread:#ffd84a; --cone:#ff8a3c; --soak:#2ea043; --pad:#3a4452; --aoe:#b06bff; --next:#2f6fb0;
-    --atk:#e0654a; --chn:#4aa3ff; --ban:#c77dff;
+    --atk:#e0654a; --chn:#4aa3ff; --ban:#c77dff; --gold:#ffd966;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
     font-family:system-ui,"Microsoft YaHei",sans-serif;}
   body{display:flex;flex-direction:column;}
 
-  /* 顶部标签页 */
   .tabs{display:flex;gap:6px;padding:7px 8px 0;flex:none;}
   .tab{flex:1;text-align:center;padding:9px;border-radius:11px 11px 0 0;border:2px solid var(--line);border-bottom:none;
     background:var(--panel);color:var(--dim);font-weight:800;font-size:clamp(15px,2.7vh,23px);cursor:pointer;}
   .tab.on{background:var(--panel2);color:var(--txt);border-color:#46566c;}
 
   .app{flex:1;min-height:0;display:flex;gap:8px;padding:8px;}
-  .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}        /* 结果/表 */
-  .right{width:40%;max-width:460px;display:flex;flex-direction:column;gap:8px;min-height:0;} /* 按钮 */
+  .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}
+  .right{width:40%;max-width:460px;display:flex;flex-direction:column;gap:8px;min-height:0;}
   .brand{font-size:clamp(11px,1.9vh,15px);color:var(--dim);font-weight:700;}
   .hint{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
     border:2px dashed var(--line);border-radius:13px;color:var(--dim);
@@ -55,7 +54,7 @@
   .bignote{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
     border:2px dashed var(--line);border-radius:13px;color:var(--soak);font-weight:900;font-size:clamp(18px,4vh,28px);}
   .reset button{width:100%;border:3px solid #6a4a2a;border-radius:14px;background:#241a10;
-    color:#f2cf8a;cursor:pointer;min-height:8vh;font-size:clamp(18px,3.4vh,28px);font-weight:900;}
+    color:#f2cf8a;cursor:pointer;min-height:7vh;font-size:clamp(16px,3vh,26px);font-weight:900;}
   .rhead{display:flex;flex-direction:column;}
   .rhead b{font-size:clamp(16px,3vh,26px);}
   .rhead span{font-size:clamp(11px,1.9vh,16px);color:var(--dim);margin-top:2px;}
@@ -73,7 +72,7 @@
   .rdiagram{flex:1;min-height:0;}
   .rdiagram svg{width:100%;height:100%;display:block;}
 
-  /* ===== 黑洞接线 ===== */
+  /* ===== 黑洞 ===== */
   .rgrp{display:flex;flex-direction:column;gap:4px;}
   .rgrp-h{font-size:clamp(12px,2vh,16px);font-weight:800;}
   .rgrp-btns{display:flex;gap:7px;}
@@ -110,11 +109,29 @@
   .wave.handoff{opacity:.78;}
   .wave.handoff .wv-g2{font-size:clamp(13px,2.7vh,21px);font-weight:800;color:#8a99ad;}
   .wave.handoff .wv-n{font-size:clamp(10px,1.7vh,13px);color:var(--dim);font-weight:600;}
+
+  /* ===== P4 ===== */
+  .p4grid{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px;}
+  .p4row{flex:1;min-height:0;display:flex;align-items:stretch;gap:7px;}
+  .p4lbl{flex:none;width:clamp(40px,8vw,66px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(12px,2.1vh,18px);font-weight:800;color:var(--dim);}
+  .p4pair{flex:1;min-width:0;display:flex;gap:6px;}
+  .p4btn{flex:1;min-width:0;border:2px solid var(--line);border-radius:10px;background:var(--panel);
+    color:var(--txt);cursor:pointer;font-size:clamp(15px,2.9vh,25px);font-weight:800;padding:2px;}
+  .p4btn.on{border-color:var(--gold);background:#3a3420;color:#ffe699;box-shadow:0 0 0 2px var(--gold) inset;}
+  .p4out{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px;}
+  .p4line{flex:1;min-height:0;display:flex;align-items:center;gap:10px;border:2px solid var(--line);
+    border-radius:10px;background:var(--panel);padding:4px 12px;}
+  .p4line.filled{border-color:#46566c;background:var(--panel2);}
+  .p4n{flex:none;width:1.5em;height:1.5em;border-radius:50%;background:var(--panel2);border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:clamp(13px,2.2vh,18px);font-weight:800;color:var(--dim);}
+  .p4cat{flex:none;width:clamp(28px,5vw,46px);font-size:clamp(11px,1.8vh,15px);color:var(--dim);font-weight:700;}
+  .p4t{flex:1;min-width:0;font-size:clamp(20px,4.8vh,42px);font-weight:900;}
+  .p4t.empty{color:#39434f;font-weight:600;font-size:clamp(14px,2.4vh,20px);}
 </style>
 </head>
 <body>
 
-<!-- 图标库（踩塔头顶点名） -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="ic-share" viewBox="0 0 100 100">
     <g fill="none" stroke="#4aa3ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
@@ -136,6 +153,7 @@
 <div class="tabs">
   <button class="tab" data-mode="tower">踩塔</button>
   <button class="tab" data-mode="blackhole">黑洞接线</button>
+  <button class="tab" data-mode="p4">P4 报点</button>
 </div>
 <div class="app">
   <div class="left" id="leftPanel"></div>
@@ -203,15 +221,50 @@ function waveStatus(rd,w,lastW){
   return (rd.toEnd && w>minC && w<=lastW)?'hold':'none';
 }
 
+/* ================= P4 数据（移植 P4Callouts.py） ================= */
+const P4BTN={
+  A:{label:'真静剑',out:'雷出',sec:'背对'}, B:{label:'假动剑',out:'水出',sec:'面对'},
+  C:{label:'短'}, D:{label:'长'},
+  E:{label:'真静剑',out:'雷出',sec:'背对'}, F:{label:'假动剑',out:'水出',sec:'面对'},
+  zh:{label:'真火',out:'放置钢铁 出'}, jh:{label:'假火',out:'放置月环 留'},
+  zs:{label:'真水',out:'放置月环 留'}, js:{label:'假水',out:'放置钢铁 出'},
+  zl:{label:'真雷'}, jl:{label:'假雷'}, zl2:{label:'真雷'}, jl2:{label:'假雷'},
+  zb:{label:'真冰'}, jb:{label:'假冰'}, zb2:{label:'真冰'}, jb2:{label:'假冰'},
+};
+const P4ROWS=[
+  {label:'第1剑',pair:['A','B']}, {label:'距离',pair:['C','D']}, {label:'第2剑',pair:['E','F']},
+  {label:'火',pair:['zh','jh']}, {label:'水',pair:['zs','js']},
+  {label:'雷①',pair:['zl','jl']}, {label:'雷②',pair:['zl2','jl2']},
+  {label:'冰①',pair:['zb','jb']}, {label:'冰②',pair:['zb2','jb2']},
+];
+const P4PARTNER={}; P4ROWS.forEach(r=>{ P4PARTNER[r.pair[0]]=r.pair[1]; P4PARTNER[r.pair[1]]=r.pair[0]; });
+function p4Output(){
+  const sel=P.sel, pick=(a,b)=> sel[a]?a:(sel[b]?b:null);
+  const lines=['','','','','','',''];           // index 0..6 = 行 1..7
+  const ab=pick('A','B'), zhjh=pick('zh','jh'), zsjs=pick('zs','js'), ef=pick('E','F');
+  const l1=pick('zl','jl'), l2=pick('zl2','jl2'), i1=pick('zb','jb'), i2=pick('zb2','jb2');
+  if(zhjh) lines[2]=P4BTN[zhjh].out;
+  if(zsjs) lines[5]=P4BTN[zsjs].out;
+  if(sel.C){ if(ab){ lines[0]=P4BTN[ab].out; lines[1]=P4BTN[ab].sec; } if(ef){ lines[3]=P4BTN[ef].out; lines[4]=P4BTN[ef].sec; } }
+  if(sel.D){ if(ab){ lines[3]=P4BTN[ab].out; lines[1]=P4BTN[ab].sec; } if(ef){ lines[0]=P4BTN[ef].out; lines[4]=P4BTN[ef].sec; } }
+  let lr='', ir='';
+  if(l1&&l2) lr = ((l1==='zl')===(l2==='zl2')) ? '真雷':'假雷';
+  if(i1&&i2) ir = ((i1==='zb')===(i2==='zb2')) ? '真冰':'假冰';
+  if(lr&&ir) lines[6]=ir+lr;
+  return lines;
+}
+function p4toggle(id){ const p=P4PARTNER[id]; if(P.sel[id]){ delete P.sel[id]; } else { if(p) delete P.sel[p]; P.sel[id]=true; } }
+
 /* ================= 状态 + 主渲染 ================= */
-let mode = (location.hash==='#bh') ? 'blackhole' : 'tower';
-const T = {group:null, cursor:0, picks:{}};   // 踩塔
-const B = {role:null, variant:false};          // 黑洞
+let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : 'tower';
+const T = {group:null, cursor:0, picks:{}};
+const B = {role:null, variant:false};
+const P = {sel:{}};
 const $ = s=>document.querySelector(s);
 
 function render(){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.mode===mode));
-  if(mode==='tower') renderTower(); else renderBlackhole();
+  if(mode==='tower') renderTower(); else if(mode==='blackhole') renderBlackhole(); else renderP4();
 }
 
 /* ---- 踩塔 ---- */
@@ -332,6 +385,27 @@ function renderBlackhole(){
   $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
 }
 
+/* ---- P4 ---- */
+function renderP4(){
+  let C='<div class="brand">P4 报点 · 每组选真/假（再点取消）→ 左侧出 7 行</div><div class="p4grid">';
+  P4ROWS.forEach(row=>{
+    C+='<div class="p4row"><div class="p4lbl">'+row.label+'</div><div class="p4pair">';
+    row.pair.forEach(id=>{ const on=P.sel[id]?' on':'';
+      C+='<button class="p4btn'+on+'" data-p4="'+id+'">'+P4BTN[id].label+'</button>'; });
+    C+='</div></div>';
+  });
+  C+='</div><div class="reset"><button data-act="p4reset">↺ 重置</button></div>';
+  const lines=p4Output(), cat=['出','面向','火','出','面向','水','冰雷'];
+  let R='<div class="p4out">';
+  lines.forEach((t,i)=>{
+    R+='<div class="p4line'+(t?' filled':'')+'"><span class="p4n">'+(i+1)+'</span>'
+      +'<span class="p4cat">'+cat[i]+'</span>'
+      +'<span class="p4t'+(t?'':' empty')+'">'+(t||'—')+'</span></div>';
+  });
+  R+='</div>';
+  $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
+}
+
 /* ================= 事件 ================= */
 document.addEventListener('click', e=>{
   const tab=e.target.closest('[data-mode]'); if(tab){ mode=tab.dataset.mode; render(); return; }
@@ -344,6 +418,9 @@ document.addEventListener('click', e=>{
   // 黑洞
   const rb=e.target.closest('[data-role]'); if(rb){ B.role=rb.dataset.role; render(); return; }
   const vb=e.target.closest('[data-var]');  if(vb){ B.variant=vb.dataset.var==='1'; render(); return; }
+  // P4
+  const p4=e.target.closest('[data-p4]'); if(p4){ p4toggle(p4.dataset.p4); render(); return; }
+  const p4r=e.target.closest('[data-act="p4reset"]'); if(p4r){ P.sel={}; render(); return; }
 });
 render();
 </script>
