@@ -73,27 +73,22 @@
   .rdiagram svg{width:100%;height:100%;display:block;}
 
   /* ===== 黑洞 ===== */
-  .rgrp{display:flex;flex-direction:column;gap:4px;}
-  .rgrp-h{font-size:clamp(12px,2vh,16px);font-weight:800;}
-  .rgrp-btns{display:flex;gap:7px;}
-  .role-btn{flex:1;min-height:7vh;border:3px solid var(--line);border-radius:12px;background:var(--panel);
-    color:var(--txt);cursor:pointer;font-size:clamp(18px,3.6vh,30px);font-weight:900;}
+  .rgrps{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
+  .rgrp{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px;}
+  .rgrp-h{font-size:clamp(13px,2.2vh,18px);font-weight:800;}
+  .rgrp-btns{flex:1;min-height:0;display:flex;gap:8px;}
+  .role-btn{flex:1;min-width:0;border:3px solid var(--line);border-radius:14px;background:var(--panel);
+    color:var(--txt);cursor:pointer;font-size:clamp(20px,4.6vh,40px);font-weight:900;}
   .role-btn.on{box-shadow:0 0 0 3px #fff inset;}
-  .vtog{display:flex;align-items:center;gap:7px;margin-top:2px;}
-  .vtog .vt-h{font-size:clamp(12px,2vh,16px);color:var(--dim);font-weight:700;flex:none;}
-  .vbtn{flex:1;min-height:6vh;border:2px solid var(--line);border-radius:11px;background:var(--panel);
-    color:var(--txt);cursor:pointer;font-size:clamp(15px,2.8vh,22px);font-weight:800;}
-  .vbtn.on{border-color:#2ea043;background:#11331f;box-shadow:0 0 0 2px #2ea043 inset;}
-  .vnote{font-size:clamp(10px,1.7vh,13px);color:var(--dim);line-height:1.4;}
   .bhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
-  .bhead b{font-size:clamp(22px,4.6vh,42px);}
-  .bhead span{font-size:clamp(11px,2vh,16px);color:var(--dim);font-weight:700;}
-  .tl{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;}
+  .bhead b{font-size:clamp(22px,4.8vh,44px);}
+  .bhead span{font-size:clamp(12px,2.1vh,17px);color:var(--dim);font-weight:700;}
+  .tl{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px;}
   .tl-row{flex:1;min-height:0;display:flex;gap:8px;align-items:stretch;}
-  .tl-rname{flex:none;width:clamp(46px,7vw,72px);display:flex;align-items:center;justify-content:center;
-    border:2px solid var(--line);border-radius:10px;background:var(--panel);
-    font-size:clamp(13px,2.4vh,19px);font-weight:900;color:var(--dim);}
-  .tl-row.active .tl-rname{color:var(--txt);}
+  .tl-rname{flex:none;width:clamp(60px,11vw,104px);display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--line);border-radius:11px;background:var(--panel2);
+    font-size:clamp(18px,3.8vh,32px);font-weight:900;color:#9fb0c4;}
+  .tl-row.active .tl-rname{border-color:#5a6b82;background:#26344a;color:#fff;}
   .tl-waves{flex:1;min-width:0;display:flex;gap:6px;}
   .wave{flex:1;min-width:0;border:2px solid var(--line);border-radius:10px;background:var(--panel);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;text-align:center;}
@@ -204,14 +199,8 @@ const PLAN={
     '禁止1':{3:{catch:{2:'接「锁链1」的线'},toEnd:true}, 4:{catch:{1:'2根·接1根'}}},
     '禁止2':{3:{catch:{3:'接「锁链2」的线'},toEnd:true}, 4:{catch:{1:'2根·接1根',2:'再接这1根'}}},
   },
-  var:{
-    '攻击1':{1:{catch:{2:'两根都你接'}}, 2:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'锁链1'}},
-    '攻击2':{1:{catch:{1:'接这1根'},handoffAt:2,takenBy:'攻击1'}, 2:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'锁链2'}},
-    '禁止1':{3:{catch:{2:'接「锁链1」的线'},toEnd:true}, 4:{catch:{2:'只接这1根'}}},
-    '禁止2':{3:{catch:{3:'接「锁链2」的线'},toEnd:true}, 4:{catch:{1:'两根都你接'}}},
-  },
 };
-const planOf=(role,v)=>(v && PLAN.var[role])?PLAN.var[role]:PLAN.std[role];
+const planOf=role=>PLAN.std[role];
 function waveStatus(rd,w,lastW){
   if(!rd) return 'none';
   const cw=Object.keys(rd.catch).map(Number), minC=Math.min(...cw);
@@ -258,7 +247,7 @@ function p4toggle(id){ const p=P4PARTNER[id]; if(P.sel[id]){ delete P.sel[id]; }
 /* ================= 状态 + 主渲染 ================= */
 let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : 'tower';
 const T = {group:null, cursor:0, picks:{}};
-const B = {role:null, variant:false};
+const B = {role:null};
 const P = {sel:{}};
 const $ = s=>document.querySelector(s);
 
@@ -351,21 +340,18 @@ function diagram(arr, shape){
 
 /* ---- 黑洞 ---- */
 function renderBlackhole(){
-  let C='<div class="brand">黑洞接线 · 选号位 → 看你每轮接/持哪几根线</div>';
+  let C='<div class="brand">黑洞接线 · 选号位｜接线后持线到「被接走 / 本轮结束」（跨轮重置）</div><div class="rgrps">';
   GROUPS.forEach(g=>{ C+='<div class="rgrp"><div class="rgrp-h" style="color:'+g.color+'">'+g.name+'</div><div class="rgrp-btns">';
     g.roles.forEach(r=>{ const on=B.role===r;
       C+='<button class="role-btn'+(on?' on':'')+'" data-role="'+r+'" style="border-color:'+g.color+(on?';background:'+g.color+'22':'')+'">'+r+'</button>'; });
     C+='</div></div>'; });
-  C+='<div class="vtog"><span class="vt-h">接法</span><button class="vbtn'+(!B.variant?' on':'')+'" data-var="0">标准</button>'
-    +'<button class="vbtn'+(B.variant?' on':'')+'" data-var="1">变体</button></div>'
-    +'<div class="vnote">同一轮内：接线后要<b style="color:#e8eef6">持线</b>，直到被别人接走或本轮结束（跨轮重置）。变体：攻击1·2、禁止1·2 换接法。</div>';
+  C+='</div>';
   let R;
   if(!B.role){ R='<div class="hint">在右侧选你的号位<br>→ 显示你每轮接线 + 持线到哪一刻</div>'; }
   else{
-    const plan=planOf(B.role,B.variant), col=groupColor(B.role), affected=B.variant&&PLAN.var[B.role];
+    const plan=planOf(B.role), col=groupColor(B.role);
     const rds=Object.keys(plan).map(Number).sort((a,b)=>a-b);
-    R='<div class="bhead"><b style="color:'+col+'">'+B.role+'</b><span>接线轮：第 '+rds.join('·')+' 轮 · 接后持线到「被接走 / 本轮结束」'
-     +(affected?' · 变体':(B.variant?' · 变体不影响此号位':''))+'</span></div><div class="tl">';
+    R='<div class="bhead"><b style="color:'+col+'">'+B.role+'</b><span>接线轮：第 '+rds.join('·')+' 轮</span></div><div class="tl">';
     for(let r=1;r<=4;r++){ const rd=plan[r], waves=ROUNDS[r], lastW=waves[waves.length-1].w;
       R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮</div><div class="tl-waves">';
       waves.forEach(wv=>{ const st=waveStatus(rd,wv.w,lastW);
@@ -417,7 +403,6 @@ document.addEventListener('click', e=>{
   const rs=e.target.closest('[data-act="reset"]'); if(rs){ T.cursor=0; T.picks={}; render(); return; }
   // 黑洞
   const rb=e.target.closest('[data-role]'); if(rb){ B.role=rb.dataset.role; render(); return; }
-  const vb=e.target.closest('[data-var]');  if(vb){ B.variant=vb.dataset.var==='1'; render(); return; }
   // P4
   const p4=e.target.closest('[data-p4]'); if(p4){ p4toggle(p4.dataset.p4); render(); return; }
   const p4r=e.target.closest('[data-act="p4reset"]'); if(p4r){ P.sel={}; render(); return; }
