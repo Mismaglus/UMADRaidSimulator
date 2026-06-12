@@ -123,6 +123,14 @@
   .p4cat{flex:none;width:clamp(28px,5vw,46px);font-size:clamp(11px,1.8vh,15px);color:var(--dim);font-weight:700;}
   .p4t{flex:1;min-width:0;font-size:clamp(20px,4.8vh,42px);font-weight:900;}
   .p4t.empty{color:#39434f;font-weight:600;font-size:clamp(14px,2.4vh,20px);}
+  .p4suf{font-size:.58em;color:var(--dim);font-weight:700;}
+  .p4me{flex:none;display:flex;align-items:center;gap:16px;border:3px solid var(--line);border-radius:13px;padding:6px 16px;min-height:13vh;}
+  .p4me.wait{justify-content:center;text-align:center;color:var(--dim);font-size:clamp(16px,3.2vh,26px);font-weight:800;}
+  .p4me.still{border-color:#4aa3ff;background:#10243b;}
+  .p4me.move{border-color:#ff8a3c;background:#2e1d10;}
+  .p4me-k{flex:none;font-size:clamp(40px,11vh,104px);font-weight:900;line-height:1;}
+  .p4me.still .p4me-k{color:#7cc0ff;} .p4me.move .p4me-k{color:#ffac6b;}
+  .p4me-d{font-size:clamp(14px,2.7vh,24px);font-weight:800;line-height:1.3;}
 </style>
 </head>
 <body>
@@ -211,22 +219,26 @@ function waveStatus(rd,w,lastW){
 }
 
 /* ================= P4 数据（移植 P4Callouts.py） ================= */
+/* 剑: 真=静剑(雷出·背对), 假=动剑(水出·面对) */
 const P4BTN={
-  A:{label:'真静剑',out:'雷出',sec:'背对'}, B:{label:'假动剑',out:'水出',sec:'面对'},
+  my1:{label:'1动静'}, my2:{label:'2动静'},
+  A:{label:'真',out:'雷出',sec:'背对',sword:'静'}, B:{label:'假',out:'水出',sec:'面对',sword:'动'},
   C:{label:'短'}, D:{label:'长'},
-  E:{label:'真静剑',out:'雷出',sec:'背对'}, F:{label:'假动剑',out:'水出',sec:'面对'},
-  zh:{label:'真火',out:'放置钢铁 出'}, jh:{label:'假火',out:'放置月环 留'},
-  zs:{label:'真水',out:'放置月环 留'}, js:{label:'假水',out:'放置钢铁 出'},
-  zl:{label:'真雷'}, jl:{label:'假雷'}, zl2:{label:'真雷'}, jl2:{label:'假雷'},
-  zb:{label:'真冰'}, jb:{label:'假冰'}, zb2:{label:'真冰'}, jb2:{label:'假冰'},
+  E:{label:'真',out:'雷出',sec:'背对',sword:'静'}, F:{label:'假',out:'水出',sec:'面对',sword:'动'},
+  zh:{label:'真',out:'放置钢铁 出'}, jh:{label:'假',out:'放置月环 留'},
+  zs:{label:'真',out:'放置月环 留'}, js:{label:'假',out:'放置钢铁 出'},
+  zl:{label:'真'}, jl:{label:'假'}, zl2:{label:'真'}, jl2:{label:'假'},
+  zb:{label:'真'}, jb:{label:'假'}, zb2:{label:'真'}, jb2:{label:'假'},
 };
 const P4ROWS=[
-  {label:'第1剑',pair:['A','B']}, {label:'距离',pair:['C','D']}, {label:'第2剑',pair:['E','F']},
+  {label:'我的剑',pair:['my1','my2']},
+  {label:'1动静',pair:['A','B']}, {label:'一水雷',pair:['C','D']}, {label:'2动静',pair:['E','F']},
   {label:'火',pair:['zh','jh']}, {label:'水',pair:['zs','js']},
   {label:'雷①',pair:['zl','jl']}, {label:'雷②',pair:['zl2','jl2']},
   {label:'冰①',pair:['zb','jb']}, {label:'冰②',pair:['zb2','jb2']},
 ];
 const P4PARTNER={}; P4ROWS.forEach(r=>{ P4PARTNER[r.pair[0]]=r.pair[1]; P4PARTNER[r.pair[1]]=r.pair[0]; });
+function swordOut(id){ return P4BTN[id].out+' <span class="p4suf">+'+P4BTN[id].sword+'剑</span>'; }
 function p4Output(){
   const sel=P.sel, pick=(a,b)=> sel[a]?a:(sel[b]?b:null);
   const lines=['','','','','','',''];           // index 0..6 = 行 1..7
@@ -234,13 +246,20 @@ function p4Output(){
   const l1=pick('zl','jl'), l2=pick('zl2','jl2'), i1=pick('zb','jb'), i2=pick('zb2','jb2');
   if(zhjh) lines[2]=P4BTN[zhjh].out;
   if(zsjs) lines[5]=P4BTN[zsjs].out;
-  if(sel.C){ if(ab){ lines[0]=P4BTN[ab].out; lines[1]=P4BTN[ab].sec; } if(ef){ lines[3]=P4BTN[ef].out; lines[4]=P4BTN[ef].sec; } }
-  if(sel.D){ if(ab){ lines[3]=P4BTN[ab].out; lines[1]=P4BTN[ab].sec; } if(ef){ lines[0]=P4BTN[ef].out; lines[4]=P4BTN[ef].sec; } }
+  if(sel.C){ if(ab){ lines[0]=swordOut(ab); lines[1]=P4BTN[ab].sec; } if(ef){ lines[3]=swordOut(ef); lines[4]=P4BTN[ef].sec; } }
+  if(sel.D){ if(ab){ lines[3]=swordOut(ab); lines[1]=P4BTN[ab].sec; } if(ef){ lines[0]=swordOut(ef); lines[4]=P4BTN[ef].sec; } }
   let lr='', ir='';
   if(l1&&l2) lr = ((l1==='zl')===(l2==='zl2')) ? '真雷':'假雷';
   if(i1&&i2) ir = ((i1==='zb')===(i2==='zb2')) ? '真冰':'假冰';
   if(lr&&ir) lines[6]=ir+lr;
   return lines;
+}
+function p4MyState(){
+  const sel=P.sel, my = sel.my1?1:(sel.my2?2:null);
+  if(!my) return {my:null};
+  const pr = my===1?['A','B']:['E','F'], pk = sel[pr[0]]?pr[0]:(sel[pr[1]]?pr[1]:null);
+  if(!pk) return {my, sword:null};
+  return {my, sword:P4BTN[pk].sword, tf:(pk===pr[0]?'真':'假'), out:P4BTN[pk].out, sec:P4BTN[pk].sec};
 }
 function p4toggle(id){ const p=P4PARTNER[id]; if(P.sel[id]){ delete P.sel[id]; } else { if(p) delete P.sel[p]; P.sel[id]=true; } }
 
@@ -373,7 +392,7 @@ function renderBlackhole(){
 
 /* ---- P4 ---- */
 function renderP4(){
-  let C='<div class="brand">P4 报点 · 每组选真/假（再点取消）→ 左侧出 7 行</div><div class="p4grid">';
+  let C='<div class="brand">P4 报点 · 每组二选一（再点取消）</div><div class="p4grid">';
   P4ROWS.forEach(row=>{
     C+='<div class="p4row"><div class="p4lbl">'+row.label+'</div><div class="p4pair">';
     row.pair.forEach(id=>{ const on=P.sel[id]?' on':'';
@@ -381,8 +400,15 @@ function renderP4(){
     C+='</div></div>';
   });
   C+='</div><div class="reset"><button data-act="p4reset">↺ 重置</button></div>';
+  // 左：我的动静大提示 + 7 行
+  const ms=p4MyState();
+  let banner;
+  if(!ms.my){ banner='<div class="p4me wait">先在右侧选「我的剑」(1动静 / 2动静)</div>'; }
+  else if(!ms.sword){ banner='<div class="p4me wait">再选「'+ms.my+'动静」是 真 还是 假</div>'; }
+  else{ banner='<div class="p4me '+(ms.sword==='静'?'still':'move')+'"><span class="p4me-k">'+ms.sword+'</span>'
+      +'<span class="p4me-d">'+ms.my+'动静 · '+ms.tf+' → '+ms.sword+'剑<br>'+ms.out+' · '+ms.sec+'</span></div>'; }
   const lines=p4Output(), cat=['出','面向','火','出','面向','水','冰雷'];
-  let R='<div class="p4out">';
+  let R=banner+'<div class="p4out">';
   lines.forEach((t,i)=>{
     R+='<div class="p4line'+(t?' filled':'')+'"><span class="p4n">'+(i+1)+'</span>'
       +'<span class="p4cat">'+cat[i]+'</span>'
