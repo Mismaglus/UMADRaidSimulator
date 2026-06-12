@@ -55,6 +55,10 @@
   /* 重来：大、好按 */
   .reset button{width:100%;border:3px solid #6a4a2a;border-radius:14px;background:#241a10;
     color:#f2cf8a;cursor:pointer;min-height:9vh;font-size:clamp(18px,3.4vh,28px);font-weight:900;}
+  /* 跳去黑洞页 */
+  .navbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:7.5vh;
+    border:3px solid #b06bff;border-radius:13px;background:#231833;color:#e7d2ff;
+    font-size:clamp(17px,3.2vh,27px);font-weight:900;text-decoration:none;cursor:pointer;}
 
   /* 结果（左） */
   .rhead{display:flex;flex-direction:column;}
@@ -146,13 +150,15 @@ function render(){
   if(c===0){
     C='<div class="brand">P2 遗弃末世 · 点名助手 ｜ 1238</div>'
      +'<div class="read-label">开局 AOE：点初始点名（自动定组）</div>'
-     +'<div class="aoe-pick">'+aoeCol('A')+aoeCol('B')+'</div>';
+     +'<div class="aoe-pick">'+aoeCol('A')+aoeCol('B')+'</div>'
+     +'<a class="navbtn" href="blackhole.html">去黑洞接线 →</a>';
     R='<div class="rhead"><b>开场 AOE</b><span>右侧：左列分摊组 / 右列闲人组，点你的初始点名 → 一步定组+定位</span></div>'
      +'<div class="hint">在右侧选「你的组 + 初始点名」 →</div>';
   } else {
     C='<div class="brand">'+(g==='A'?'分摊组（踩 1·2·3·8）':'闲人组（踩 4·5·6·7）')+'</div>'+progressHtml();
     if(c===8){
-      C+='<div class="pick"><div class="bignote">✅ 已是最后一塔</div></div>';
+      C+='<div class="pick"><div class="bignote">✅ 已是最后一塔</div></div>'
+       +'<a class="navbtn" href="blackhole.html">去黑洞接线 →</a>';
     } else {
       const target=READS[g][c];
       if(target!==undefined){ C+='<div class="read-label">读新点名 → 塔'+target+'</div>'+pickHtml(target); }
