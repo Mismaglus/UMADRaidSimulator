@@ -90,6 +90,10 @@
     border:2px solid var(--line);border-radius:11px;background:var(--panel2);
     font-size:clamp(18px,3.8vh,32px);font-weight:900;color:#9fb0c4;}
   .tl-row.active .tl-rname{border-color:#5a6b82;background:#26344a;color:#fff;}
+  .tl-rname small{display:block;font-size:.5em;color:var(--dim);font-weight:700;margin-top:2px;}
+  .bhpre{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:3px 5px;font-size:clamp(9px,1.6vh,13px);color:var(--dim);font-weight:600;line-height:1.2;}
+  .bhpre .bhm{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 6px;}
+  .bhpre i{color:#46566c;font-style:normal;}
   .tl-waves{flex:1;min-width:0;display:flex;gap:6px;}
   .wave{flex:1;min-width:0;border:2px solid var(--line);border-radius:10px;background:var(--panel);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;text-align:center;}
@@ -217,6 +221,13 @@ const PLAN={
   },
 };
 const planOf=role=>PLAN.std[role];
+/* 黑洞战斗流程：每个黑洞前的前置机制 */
+const BH_FLOW=[
+  {pre:['暴雷1·死刑（一运后立即）','决战·防火墙','暴雷2·死刑','地震·清1血+buff','卡夫卡半场刀'], round:1},
+  {pre:['暴雷3·死刑','卡奥斯前刀 + 凯夫卡半场刀'], round:2},
+  {pre:['卡奥斯前刀 + 凯夫卡辣尾','暴雷4·死刑'], round:3},
+  {pre:['卡奥斯经纬 + 凯夫卡半场刀'], round:4, post:true},
+];
 function waveStatus(rd,w,lastW){
   if(!rd) return 'none';
   const cw=Object.keys(rd.catch).map(Number), minC=Math.min(...cw);
@@ -383,28 +394,24 @@ function renderBlackhole(){
       C+='<button class="role-btn'+(on?' on':'')+'" data-role="'+r+'" style="border-color:'+g.color+(on?';background:'+g.color+'22':'')+'">'+r+'</button>'; });
     C+='</div></div>'; });
   C+='</div>';
-  let R;
-  if(!B.role){ R='<div class="hint">在右侧选你的号位<br>→ 显示你每轮接线 + 持线到哪一刻</div>'; }
-  else{
-    const plan=planOf(B.role), col=groupColor(B.role);
-    const rds=Object.keys(plan).map(Number).sort((a,b)=>a-b);
-    R='<div class="bhead"><b style="color:'+col+'">'+B.role+'</b><span>接线轮：第 '+rds.join('·')+' 轮</span></div><div class="tl">';
-    for(let r=1;r<=4;r++){ const rd=plan[r], waves=ROUNDS[r], lastW=waves[waves.length-1].w;
-      R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮</div><div class="tl-waves">';
-      waves.forEach(wv=>{ const st=waveStatus(rd,wv.w,lastW);
-        if(st==='catch'){ R+='<div class="wave catch" style="border-color:'+col+';background:'+col+'26">'
-            +'<div class="wv-h" style="color:'+col+'">第'+wv.w+'次</div><div class="wv-g" style="color:'+col+'">接线</div>'
-            +'<div class="wv-n">'+rd.catch[wv.w]+'</div></div>'; }
-        else if(st==='hold'){ R+='<div class="wave hold" style="border-color:'+col+'99"><div class="wv-h">第'+wv.w+'次</div>'
-            +'<div class="wv-g2" style="color:'+col+'">保持</div><div class="wv-n">'+(wv.w===lastW?'持到本轮结束':'持线中')+'</div></div>'; }
-        else if(st==='handoff'){ R+='<div class="wave handoff"><div class="wv-h">第'+wv.w+'次</div>'
-            +'<div class="wv-g2">交出</div><div class="wv-n">「'+rd.takenBy+'」接走</div></div>'; }
-        else{ R+='<div class="wave"><div class="wv-h">第'+wv.w+'次</div><div class="wv-x">'+wv.lines+'根</div></div>'; }
-      });
-      R+='</div></div>';
-    }
-    R+='</div>';
-  }
+  const plan=B.role?planOf(B.role):null, col=B.role?groupColor(B.role):'#8a99ad';
+  let R='<div class="bhead">'+(B.role
+      ? '<b style="color:'+col+'">'+B.role+'</b><span>黑洞流程 · 你每轮接线（灰块＝前置机制）</span>'
+      : '<b>黑洞流程</b><span>右侧选号位 → 看你每轮接线</span>')+'</div><div class="tl">';
+  BH_FLOW.forEach(stage=>{
+    R+='<div class="bhpre">'+stage.pre.map(m=>'<span class="bhm">'+m+'</span>').join('<i>›</i>')+'</div>';
+    const r=stage.round, waves=ROUNDS[r], lastW=waves[waves.length-1].w, rd=plan?plan[r]:null;
+    R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮<small>黑洞'+(stage.post?'·辣尾':'')+'</small></div><div class="tl-waves">';
+    if(!plan){ R+='<div class="wave"><div class="wv-x">选号位看接线</div></div>'; }
+    else{ waves.forEach(wv=>{ const st=waveStatus(rd,wv.w,lastW);
+      if(st==='catch'){ R+='<div class="wave catch" style="border-color:'+col+';background:'+col+'26"><div class="wv-h" style="color:'+col+'">第'+wv.w+'次</div><div class="wv-g" style="color:'+col+'">接线</div><div class="wv-n">'+rd.catch[wv.w]+'</div></div>'; }
+      else if(st==='hold'){ R+='<div class="wave hold" style="border-color:'+col+'99"><div class="wv-h">第'+wv.w+'次</div><div class="wv-g2" style="color:'+col+'">保持</div><div class="wv-n">'+(wv.w===lastW?'持到本轮结束':'持线中')+'</div></div>'; }
+      else if(st==='handoff'){ R+='<div class="wave handoff"><div class="wv-h">第'+wv.w+'次</div><div class="wv-g2">交出</div><div class="wv-n">「'+rd.takenBy+'」接走</div></div>'; }
+      else{ R+='<div class="wave"><div class="wv-h">第'+wv.w+'次</div><div class="wv-x">'+wv.lines+'根</div></div>'; }
+    }); }
+    R+='</div></div>';
+  });
+  R+='</div>';
   $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
 }
 
