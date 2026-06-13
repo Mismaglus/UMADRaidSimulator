@@ -95,6 +95,9 @@
   .bhpre{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:5px 7px;font-size:clamp(13px,2.4vh,20px);color:#c4cfdc;font-weight:700;line-height:1.25;}
   .bhpre .bhm{background:var(--panel2);border:1px solid #3a4758;border-radius:8px;padding:3px 10px;}
   .bhpre i{color:#5c6c82;font-style:normal;}
+  .bhtail{flex:none;display:flex;align-items:center;gap:8px;font-size:clamp(13px,2.4vh,20px);color:#c4cfdc;font-weight:700;}
+  .bhtail::before{content:"↳ 第4轮后";color:var(--dim);font-weight:600;font-size:.8em;}
+  .bhtail .bhm{background:var(--panel2);border:1px solid #3a4758;border-radius:8px;padding:3px 10px;}
   .tl-waves{flex:1;min-width:0;display:flex;gap:6px;}
   .wave{flex:1;min-width:0;border:2px solid var(--line);border-radius:10px;background:var(--panel);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;text-align:center;}
@@ -402,7 +405,7 @@ function renderBlackhole(){
   BH_FLOW.forEach(stage=>{
     R+='<div class="bhcard"><div class="bhpre">'+stage.pre.map(m=>'<span class="bhm">'+m+'</span>').join('<i>›</i>')+'</div>';
     const r=stage.round, waves=ROUNDS[r], lastW=waves[waves.length-1].w, rd=plan?plan[r]:null;
-    R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮<small>黑洞'+(stage.post?'·辣尾':'')+'</small></div><div class="tl-waves">';
+    R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮</div><div class="tl-waves">';
     if(!plan){ R+='<div class="wave"><div class="wv-x">选号位看接线</div></div>'; }
     else{ waves.forEach(wv=>{ const st=waveStatus(rd,wv.w,lastW);
       if(st==='catch'){ R+='<div class="wave catch" style="border-color:'+col+';background:'+col+'26"><div class="wv-h" style="color:'+col+'">第'+wv.w+'次</div><div class="wv-g" style="color:'+col+'">接线</div><div class="wv-n">'+rd.catch[wv.w]+'</div></div>'; }
@@ -412,6 +415,7 @@ function renderBlackhole(){
     }); }
     R+='</div></div></div>';
   });
+  R+='<div class="bhtail"><span class="bhm">凯夫卡辣尾</span></div>';
   R+='</div>';
   $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
 }
