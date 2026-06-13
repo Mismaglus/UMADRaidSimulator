@@ -25,6 +25,12 @@
   .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}
   .right{width:40%;max-width:460px;display:flex;flex-direction:column;gap:8px;min-height:0;}
   body.m-p4 .right{width:60%;max-width:760px;}   /* P4 按钮多，给它更宽；踩塔/黑洞保持 40% */
+  body.m-sushi .right{display:none;}             /* sushi 只显示一张图，铺满 */
+  .sushi-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;}
+  .sushi-img{width:100%;height:100%;object-fit:contain;border-radius:8px;}
+  .sushi-img.err{display:none;}
+  .sushi-missing{display:none;color:var(--dim);font-size:clamp(14px,3vh,24px);font-weight:700;text-align:center;padding:24px;line-height:1.6;}
+  .sushi-img.err + .sushi-missing{display:block;}
   .brand{font-size:clamp(11px,1.9vh,15px);color:var(--dim);font-weight:700;}
   .hint{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
     border:2px dashed var(--line);border-radius:13px;color:var(--dim);
@@ -170,6 +176,7 @@
 </svg>
 
 <div class="tabs">
+  <button class="tab" data-mode="sushi">sushi</button>
   <button class="tab" data-mode="tower">踩塔</button>
   <button class="tab" data-mode="blackhole">黑洞接线</button>
   <button class="tab" data-mode="p4">P4 报点</button>
@@ -296,7 +303,7 @@ function p4MyState(){
 function p4toggle(id){ const p=P4PARTNER[id]; if(P.sel[id]){ delete P.sel[id]; } else { if(p) delete P.sel[p]; P.sel[id]=true; } }
 
 /* ================= 状态 + 主渲染 ================= */
-let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : 'tower';
+let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : location.hash==='#sushi' ? 'sushi' : 'tower';
 const T = {group:null, cursor:0, picks:{}};
 const B = {role:null};
 const P = {sel:{}};
@@ -305,7 +312,11 @@ const $ = s=>document.querySelector(s);
 function render(){
   document.body.className='m-'+mode;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.mode===mode));
-  if(mode==='tower') renderTower(); else if(mode==='blackhole') renderBlackhole(); else renderP4();
+  if(mode==='tower') renderTower(); else if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else renderSushi();
+}
+function renderSushi(){
+  $('#leftPanel').innerHTML='<div class="sushi-wrap"><img class="sushi-img" src="sushi.png?v=1" alt="sushi" onerror="this.classList.add(\'err\')"><div class="sushi-missing">把这张图存成 <b>GitRepo/sushi.png</b>（与 p2.html 同目录）即可显示</div></div>';
+  $('#rightPanel').innerHTML='';
 }
 
 /* ---- 踩塔 ---- */
