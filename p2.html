@@ -239,6 +239,8 @@ const BH_FLOW=[
   {pre:['卡奥斯前刀 + 凯夫卡辣尾','暴雷4 死刑'], round:3},
   {pre:['卡奥斯经纬 + 凯夫卡半场刀'], round:4, post:true},
 ];
+/* 黑洞每轮固定 3 列（按激光时点） */
+const BH_WAVES=[{w:1,lab:'第一条线'},{w:2,lab:'1激光后'},{w:3,lab:'2激光后'}];
 function waveStatus(rd,w,lastW){
   if(!rd) return 'none';
   const cw=Object.keys(rd.catch).map(Number), minC=Math.min(...cw);
@@ -417,13 +419,14 @@ function renderBlackhole(){
     R+='<div class="bhcard"><div class="bhpre">'+stage.pre.map(m=>'<span class="bhm">'+m+'</span>').join('<i>›</i>')+'</div>';
     const r=stage.round, waves=ROUNDS[r], lastW=waves[waves.length-1].w, rd=plan?plan[r]:null;
     R+='<div class="tl-row'+(rd?' active':'')+'"><div class="tl-rname">第'+r+'轮</div><div class="tl-waves">';
-    if(!plan){ R+='<div class="wave"><div class="wv-x">选号位看接线</div></div>'; }
-    else{ waves.forEach(wv=>{ const st=waveStatus(rd,wv.w,lastW);
-      if(st==='catch'){ R+='<div class="wave catch" style="border-color:'+col+';background:'+col+'26"><div class="wv-h" style="color:'+col+'">第'+wv.w+'次</div><div class="wv-g" style="color:'+col+'">接线</div><div class="wv-n">'+rd.catch[wv.w]+'</div></div>'; }
-      else if(st==='hold'){ R+='<div class="wave hold" style="border-color:'+col+'99"><div class="wv-h">第'+wv.w+'次</div><div class="wv-g2" style="color:'+col+'">保持</div><div class="wv-n">'+(wv.w===lastW?'持到本轮结束':'持线中')+'</div></div>'; }
-      else if(st==='handoff'){ R+='<div class="wave handoff"><div class="wv-h">第'+wv.w+'次</div><div class="wv-g2">交出</div><div class="wv-n">「'+rd.takenBy+'」接走</div></div>'; }
-      else{ R+='<div class="wave"><div class="wv-h">第'+wv.w+'次</div><div class="wv-x">'+wv.lines+'根</div></div>'; }
-    }); }
+    BH_WAVES.forEach(({w,lab})=>{ const wv=waves.find(x=>x.w===w);
+      if(!wv){ R+='<div class="wave"><div class="wv-h">'+lab+'</div><div class="wv-x">—</div></div>'; return; }
+      const st=plan?waveStatus(rd,w,lastW):'none';
+      if(st==='catch'){ R+='<div class="wave catch" style="border-color:'+col+';background:'+col+'26"><div class="wv-h" style="color:'+col+'">'+lab+'</div><div class="wv-g" style="color:'+col+'">接线</div><div class="wv-n">'+rd.catch[w]+'</div></div>'; }
+      else if(st==='hold'){ R+='<div class="wave hold" style="border-color:'+col+'99"><div class="wv-h">'+lab+'</div><div class="wv-g2" style="color:'+col+'">保持</div><div class="wv-n">'+(w===lastW?'持到本轮结束':'持线中')+'</div></div>'; }
+      else if(st==='handoff'){ R+='<div class="wave handoff"><div class="wv-h">'+lab+'</div><div class="wv-g2">交出</div><div class="wv-n">「'+rd.takenBy+'」接走</div></div>'; }
+      else{ R+='<div class="wave"><div class="wv-h">'+lab+'</div><div class="wv-x">'+wv.lines+'根</div></div>'; }
+    });
     R+='</div></div></div>';
   });
   R+='<div class="bhtail"><span class="bhm">凯夫卡辣尾</span></div>';
