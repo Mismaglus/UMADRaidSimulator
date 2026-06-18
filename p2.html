@@ -20,6 +20,9 @@
   .tab{flex:1;text-align:center;padding:9px;border-radius:11px 11px 0 0;border:2px solid var(--line);border-bottom:none;
     background:var(--panel);color:var(--dim);font-weight:800;font-size:clamp(15px,2.7vh,23px);cursor:pointer;}
   .tab.on{background:var(--panel2);color:var(--txt);border-color:#46566c;}
+  .linkbtn{flex:none;padding:9px 13px;border-radius:11px 11px 0 0;border:2px solid var(--line);border-bottom:none;
+    background:var(--panel);color:var(--dim);font-weight:800;font-size:clamp(13px,2.4vh,19px);cursor:pointer;white-space:nowrap;}
+  .linkbtn.on{background:#11321f;border-color:#2ea043;color:#8fe0a8;}
 
   .app{flex:1;min-height:0;display:flex;gap:8px;padding:8px;}
   .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}
@@ -180,6 +183,7 @@
   <button class="tab" data-mode="tower">踩塔</button>
   <button class="tab" data-mode="blackhole">黑洞接线</button>
   <button class="tab" data-mode="p4">P4 报点</button>
+  <button class="linkbtn" id="roomBtn" title="联机同步：和朋友共享 P4/踩塔">联机</button>
 </div>
 <div class="app">
   <div class="left" id="leftPanel"></div>
@@ -187,6 +191,27 @@
 </div>
 
 <script>
+/* ============================================================
+   联机同步配置（可选）— 填好后「联机」按钮即可与朋友共享 P4/踩塔状态
+   1) console.firebase.google.com → 新建项目（可关掉 Analytics）
+   2) 构建 → Realtime Database → 创建数据库 → 选离你近的区域 → 锁定模式
+   3) ⚙ 项目设置 → 你的应用 → Web(</>) → 注册 → 复制 firebaseConfig
+      （务必包含 databaseURL，否则联机无效）
+   4) 用你的 firebaseConfig 替换下面这个对象
+   5) Realtime Database → 规则 标签 → 粘贴并发布：
+      { "rules": { "rooms": { "$room": { ".read": true, ".write": true } } } }
+   不填则「联机」按钮提示未配置，其余功能照常离线可用。
+   ============================================================ */
+const FIREBASE_CFG = {
+  apiKey: "AIzaSyCWgICRE-RBFKF48xoX6stCGCtaJzLnZb4",
+  authDomain: "umad-bed82.firebaseapp.com",
+  databaseURL: "https://umad-bed82-default-rtdb.firebaseio.com",
+  projectId: "umad-bed82",
+  storageBucket: "umad-bed82.firebasestorage.app",
+  messagingSenderId: "349462958163",
+  appId: "1:349462958163:web:fbfc32b3610a5f4fbbb6a6"
+};
+
 /* ================= 踩塔数据 ================= */
 const SOAK = {
   1:{'分摊':'右塔 · 上沿', '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
@@ -474,7 +499,92 @@ document.addEventListener('click', e=>{
   const p4=e.target.closest('[data-p4]'); if(p4){ p4toggle(p4.dataset.p4); render(); return; }
   const p4r=e.target.closest('[data-act="p4reset"]'); if(p4r){ P.sel={}; render(); return; }
 });
+
+/* ================= 联机同步（Firebase 实时数据库 · 可选） =================
+   共享 = 踩塔 T(组/进度/点名) + P4 真相(除"我的剑"外的全部)；
+   个人 = 黑洞号位 B.role、P4 my1/my2、当前标签 —— 不进房间则零影响、离线照常。*/
+let roomCode=null, towerRef=null, p4Ref=null;
+let applyingRemote=false, towerHydrated=false, p4Hydrated=false;
+let lastTower='', lastP4='';
+
+function p4Shared(){ const o={}; for(const k in P.sel){ if(k!=='my1'&&k!=='my2') o[k]=true; } return o; }
+function pushTower(){ if(!roomCode||applyingRemote) return;
+  const o={group:T.group,cursor:T.cursor,picks:T.picks}, s=JSON.stringify(o);
+  if(s!==lastTower){ lastTower=s; towerRef.set(o); } }
+function pushP4(){ if(!roomCode||applyingRemote) return;
+  const o=p4Shared(), s=JSON.stringify(o);
+  if(s!==lastP4){ lastP4=s; p4Ref.set(o); } }
+function pushShared(){ pushTower(); pushP4(); }
+
+function applyTower(v){ applyingRemote=true;
+  if(v==null && !towerHydrated){ towerHydrated=true; applyingRemote=false; pushTower(); return; }  // 空房间→用本地播种
+  towerHydrated=true;
+  if(v){ T.group=(v.group!==undefined?v.group:null); T.cursor=v.cursor||0;
+    let pk={}, vp=v.picks; if(vp){ if(Array.isArray(vp)) vp.forEach((val,i)=>{ if(val!=null) pk[i]=val; }); else pk=vp; }
+    T.picks=pk; }
+  else { T.group=null; T.cursor=0; T.picks={}; }
+  lastTower=JSON.stringify({group:T.group,cursor:T.cursor,picks:T.picks});
+  render(); applyingRemote=false; }
+function applyP4(v){ applyingRemote=true;
+  if(v==null && !p4Hydrated){ p4Hydrated=true; applyingRemote=false; pushP4(); return; }
+  p4Hydrated=true;
+  const m1=P.sel.my1, m2=P.sel.my2; P.sel={};               // 合并：清旧共享真相，保留个人"我的剑"
+  if(m1)P.sel.my1=true; if(m2)P.sel.my2=true;
+  if(v) for(const k in v){ if(k!=='my1'&&k!=='my2') P.sel[k]=true; }
+  lastP4=JSON.stringify(p4Shared());
+  render(); applyingRemote=false; }
+
+function loadFirebase(){ return new Promise((res,rej)=>{
+  if(typeof firebase!=='undefined' && firebase.database) return res();
+  const urls=['https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js',
+              'https://www.gstatic.com/firebasejs/12.15.0/firebase-database-compat.js'];
+  let i=0; (function next(){ if(i>=urls.length) return res();
+    const s=document.createElement('script'); s.src=urls[i++];
+    s.onload=next; s.onerror=()=>rej(new Error('load')); document.head.appendChild(s); })(); }); }
+
+async function joinRoom(code){ code=(code||'').trim(); if(!code) return;
+  if(!FIREBASE_CFG.databaseURL){ alert('联机未配置：请先在 p2.html 顶部的 FIREBASE_CFG 填入 Firebase 配置（需含 databaseURL），并发布 rooms 数据库规则。'); return; }
+  try{
+    await loadFirebase();
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CFG);
+    const db=firebase.database();
+    if(towerRef) towerRef.off(); if(p4Ref) p4Ref.off();   // 防止重复进房时旧房间监听泄漏
+    roomCode=code; towerHydrated=false; p4Hydrated=false; lastTower=''; lastP4='';
+    towerRef=db.ref('rooms/'+code+'/tower'); p4Ref=db.ref('rooms/'+code+'/p4');
+    towerRef.on('value', s=>applyTower(s.val()));
+    p4Ref.on('value', s=>applyP4(s.val()));
+    try{ localStorage.setItem('p2room', code); }catch(_){}
+    setRoomUrl(code); updateBadge();
+  }catch(e){ roomCode=null; towerRef=p4Ref=null; updateBadge(); alert('联机连接失败，继续离线使用。'); } }
+function leaveRoom(){ if(towerRef) towerRef.off(); if(p4Ref) p4Ref.off();
+  roomCode=null; towerRef=p4Ref=null; lastTower=lastP4=''; towerHydrated=p4Hydrated=false;
+  try{ localStorage.removeItem('p2room'); }catch(_){}
+  clearRoomUrl(); updateBadge(); }
+function setRoomUrl(c){ try{ const u=new URL(location.href); u.searchParams.set('room',c); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(_){} }
+function clearRoomUrl(){ try{ const u=new URL(location.href); u.searchParams.delete('room'); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(_){} }
+function updateBadge(){ const b=$('#roomBtn'); if(!b) return;
+  b.textContent = roomCode ? ('🟢 '+roomCode) : '联机'; b.classList.toggle('on', !!roomCode); }
+
+/* 包裹 render：每次本地变更后把共享分片广播到房间（个人/标签切换经比对后不写） */
+const _render = render;
+render = function(){ _render(); pushShared(); };
+
+(function(){ const b=$('#roomBtn'); if(!b) return;
+  b.onclick=()=>{ if(roomCode){ if(confirm('退出联机「'+roomCode+'」？')) leaveRoom(); }
+    else{ if(!FIREBASE_CFG.databaseURL){ alert('联机未配置：请先在 p2.html 顶部的 FIREBASE_CFG 填入 Firebase 配置。'); return; }
+      let last=''; try{ last=localStorage.getItem('p2room')||''; }catch(_){}
+      const def = last || Math.random().toString(36).slice(2,8);
+      const c=prompt('输入房间码（同一码 = 同一房间，和朋友约定一致）：', def);
+      if(c) joinRoom(c); } };
+  updateBadge(); })();
+
 render();
+
+/* 分享链接 ?room=xxxx 或上次房间 → 自动进房 */
+(function(){ let code=null;
+  try{ code=new URLSearchParams(location.search).get('room'); }catch(_){}
+  if(!code){ try{ code=localStorage.getItem('p2room'); }catch(_){} }
+  if(code && FIREBASE_CFG.databaseURL) joinRoom(code); })();
 </script>
 </body>
 </html>
