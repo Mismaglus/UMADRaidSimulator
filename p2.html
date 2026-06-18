@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>UMAD 助手 · 踩塔 + 黑洞 + P4</title>
+<title>UMAD 助手 · 黑洞 + P4</title>
 <style>
   :root{
     --bg:#0c0f14; --panel:#161b24; --panel2:#1d2533; --line:#2b3545;
@@ -27,7 +27,7 @@
   .app{flex:1;min-height:0;display:flex;gap:8px;padding:8px;}
   .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0;}
   .right{width:40%;max-width:460px;display:flex;flex-direction:column;gap:8px;min-height:0;}
-  body.m-p4 .right{width:60%;max-width:760px;}   /* P4 按钮多，给它更宽；踩塔/黑洞保持 40% */
+  body.m-p4 .right{width:60%;max-width:760px;}   /* P4 按钮多，给它更宽；黑洞保持 40% */
   body.m-sushi .right{display:none;}             /* sushi 只显示一张图，铺满 */
   .sushi-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;}
   .sushi-img{width:100%;height:100%;object-fit:contain;border-radius:8px;}
@@ -38,49 +38,6 @@
   .hint{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
     border:2px dashed var(--line);border-radius:13px;color:var(--dim);
     font-size:clamp(18px,4vh,30px);font-weight:800;line-height:1.5;}
-
-  /* ===== 踩塔 ===== */
-  .aoe-pick{flex:1;min-height:0;display:flex;gap:8px;}
-  .aoe-col{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;}
-  .aoe-h{text-align:center;font-weight:800;font-size:clamp(13px,2.3vh,19px);line-height:1.1;}
-  .aoe-h small{display:block;color:var(--dim);font-size:clamp(9px,1.5vh,12px);font-weight:500;margin-top:2px;}
-  .aoe-btn{flex:1;min-height:0;border:3px solid var(--line);border-radius:12px;background:var(--panel);
-    color:var(--txt);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-    font-weight:900;font-size:clamp(17px,3.4vh,30px);}
-  .aoe-btn svg{width:clamp(28px,5.6vh,52px);height:clamp(28px,5.6vh,52px);}
-  .progress{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;}
-  .pcell{min-height:5.2vh;border:2px solid var(--line);border-radius:7px;background:var(--panel);
-    color:var(--txt);font-size:clamp(11px,1.9vh,15px);font-weight:800;cursor:pointer;padding:1px;}
-  .pcell.aoe{border-color:var(--aoe);} .pcell.soak{border-color:var(--soak);}
-  .pcell.pad{border-color:var(--pad);color:var(--dim);} .pcell.set{background:var(--panel2);}
-  .pcell.cur{box-shadow:0 0 0 3px #fff inset;background:var(--panel2);color:var(--txt);}
-  .read-label{font-size:clamp(13px,2.3vh,18px);font-weight:800;color:var(--cone);text-align:center;}
-  .pick{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px;}
-  .pick-btn{flex:1;min-height:0;border:3px solid var(--line);border-radius:13px;background:var(--panel);
-    color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:14px;
-    font-size:clamp(22px,5vh,40px);font-weight:900;}
-  .pick-btn svg{width:clamp(38px,8vh,72px);height:clamp(38px,8vh,72px);flex:none;}
-  .pick-btn.next{border-color:var(--next);background:#13283f;}
-  .bignote{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
-    border:2px dashed var(--line);border-radius:13px;color:var(--soak);font-weight:900;font-size:clamp(18px,4vh,28px);}
-  .reset button{width:100%;border:3px solid #6a4a2a;border-radius:14px;background:#241a10;
-    color:#f2cf8a;cursor:pointer;min-height:7vh;font-size:clamp(16px,3vh,26px);font-weight:900;}
-  .rhead{display:flex;flex-direction:column;}
-  .rhead b{font-size:clamp(16px,3vh,26px);}
-  .rhead span{font-size:clamp(11px,1.9vh,16px);color:var(--dim);margin-top:2px;}
-  .rgo{display:flex;align-items:center;gap:14px;}
-  .rgo-ic{width:clamp(44px,9vh,84px);height:clamp(44px,9vh,84px);flex:none;}
-  .rgo-text{display:flex;flex-direction:column;min-width:0;}
-  .rgo-shape{font-size:clamp(15px,2.4vh,22px);font-weight:800;}
-  .rgo-go{font-size:clamp(24px,5.8vh,56px);font-weight:900;line-height:1.04;}
-  .rgo-go .lbl{font-size:.42em;color:var(--dim);font-weight:700;margin-right:.2em;}
-  .rgo-multi{display:flex;flex-direction:column;gap:5px;margin-top:3px;}
-  .rgo-line{display:flex;align-items:center;gap:8px;font-size:clamp(19px,4.3vh,40px);font-weight:900;line-height:1.05;}
-  .rgo-line .num{flex:none;width:1.25em;height:1.25em;border:2px solid var(--line);border-radius:50%;
-    display:inline-flex;align-items:center;justify-content:center;font-size:.62em;color:var(--txt);background:var(--panel2);}
-  .rgo-tag{font-size:.52em;color:var(--dim);font-weight:700;}
-  .rdiagram{flex:1;min-height:0;}
-  .rdiagram svg{width:100%;height:100%;display:block;}
 
   /* ===== 黑洞 ===== */
   .rgrps{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
@@ -160,30 +117,11 @@
 </head>
 <body>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="ic-share" viewBox="0 0 100 100">
-    <g fill="none" stroke="#4aa3ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-      <g><polyline points="33.9,24 50,38.3 66.1,24"/><polyline points="33.9,9.7 50,24 66.1,9.7"/></g>
-      <g transform="rotate(90 50 50)"><polyline points="33.9,24 50,38.3 66.1,24"/><polyline points="33.9,9.7 50,24 66.1,9.7"/></g>
-      <g transform="rotate(180 50 50)"><polyline points="33.9,24 50,38.3 66.1,24"/><polyline points="33.9,9.7 50,24 66.1,9.7"/></g>
-      <g transform="rotate(270 50 50)"><polyline points="33.9,24 50,38.3 66.1,24"/><polyline points="33.9,9.7 50,24 66.1,9.7"/></g>
-    </g>
-  </symbol>
-  <symbol id="ic-spread" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="26" fill="none" stroke="#ffd84a" stroke-width="8.5"/>
-    <circle cx="50" cy="50" r="9" fill="#ffd84a"/>
-  </symbol>
-  <symbol id="ic-cone" viewBox="0 0 100 100">
-    <path d="M50 78.6 L24 37 Q50 18.8 76 37 Z" fill="#ff8a3c" stroke="#c85a14" stroke-width="3" stroke-linejoin="round"/>
-  </symbol>
-</svg>
-
 <div class="tabs">
   <button class="tab" data-mode="sushi">sushi</button>
-  <button class="tab" data-mode="tower">踩塔</button>
   <button class="tab" data-mode="blackhole">黑洞接线</button>
   <button class="tab" data-mode="p4">P4 报点</button>
-  <button class="linkbtn" id="roomBtn" title="联机同步：和朋友共享 P4/踩塔">联机</button>
+  <button class="linkbtn" id="roomBtn" title="联机同步：和朋友共享 P4">联机</button>
 </div>
 <div class="app">
   <div class="left" id="leftPanel"></div>
@@ -192,7 +130,7 @@
 
 <script>
 /* ============================================================
-   联机同步配置（可选）— 填好后「联机」按钮即可与朋友共享 P4/踩塔状态
+   联机同步配置（可选）— 填好后「联机」按钮即可与朋友共享 P4 报点状态
    1) console.firebase.google.com → 新建项目（可关掉 Analytics）
    2) 构建 → Realtime Database → 创建数据库 → 选离你近的区域 → 锁定模式
    3) ⚙ 项目设置 → 你的应用 → Web(</>) → 注册 → 复制 firebaseConfig
@@ -211,29 +149,6 @@ const FIREBASE_CFG = {
   messagingSenderId: "349462958163",
   appId: "1:349462958163:web:fbfc32b3610a5f4fbbb6a6"
 };
-
-/* ================= 踩塔数据 ================= */
-const SOAK = {
-  1:{'分摊':'右塔 · 上沿', '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
-  2:{'钢铁':[{loc:'左塔 · 左下'},{loc:'右塔 · 右下'}], '扇形':[{loc:'左塔 · 中轴线顶部'},{loc:'右塔 · 中轴线顶部'}]},
-  3:{'分摊':[{loc:'左塔 · 上沿（靠中）',tag:'接扇形'},{loc:'右塔 · 上沿'}], '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
-  4:{'钢铁':'右塔 · 右下', '扇形':'右塔 · 中轴线顶部'},
-  5:{'分摊':[{loc:'左塔 · 上沿（靠中）',tag:'接扇形'},{loc:'右塔 · 上沿'}], '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
-  6:{'钢铁':[{loc:'左塔 · 左下'},{loc:'右塔 · 右下'}], '扇形':[{loc:'左塔 · 中轴线顶部'},{loc:'右塔 · 中轴线顶部'}]},
-  7:{'分摊':[{loc:'左塔 · 上沿（靠中）',tag:'接扇形'},{loc:'右塔 · 上沿'}], '钢铁':'右塔 · 右下', '扇形':'左塔 · 左下'},
-  8:{'钢铁':'右塔 · 右下', '扇形':'右塔 · 中轴线顶部'},
-};
-const SOAK_TOWERS={A:[1,2,3,8], B:[4,5,6,7]}, FINAL_SOAK={A:8,B:7}, FIRST_SOAK={A:1,B:4};
-const READS={A:{0:1,1:2,2:3,3:8}, B:{0:4,4:5,5:6,6:7}};
-const SHAPE={'分摊':{color:'#4aa3ff',sym:'ic-share'}, '钢铁':{color:'#ffd84a',sym:'ic-spread'}, '扇形':{color:'#ff8a3c',sym:'ic-cone'}};
-const POS={
-  '右塔 · 上沿':{x:320,y:138}, '右塔 · 右下':{x:349,y:224}, '左塔 · 左下':{x:131,y:224},
-  '右塔 · 中轴线顶部':{x:320,y:152}, '左塔 · 中轴线顶部':{x:160,y:152}, '右塔 · 右边':{x:396,y:195},
-  '右塔 · 上沿（塔外）':{x:320,y:108}, '左塔 · 上沿（靠中）':{x:188,y:146},
-};
-const isSoak=(g,t)=> g && SOAK_TOWERS[g].includes(t);
-function padInfo(t){ return (t%2===0)?{action:'引导扇形',loc:'右塔 · 右边',shape:'扇形'}:{action:'处理分摊',loc:'右塔 · 上沿（塔外）',shape:'分摊'}; }
-function positions(t,c){ const v=SOAK[t][c]; return Array.isArray(v)?v:[{loc:v,tag:''}]; }
 
 /* ================= 黑洞数据 ================= */
 const GROUPS=[
@@ -330,8 +245,7 @@ function p4MyState(){
 function p4toggle(id){ if(P.sel[id]) return; const p=P4PARTNER[id]; if(p) delete P.sel[p]; P.sel[id]=true; }
 
 /* ================= 状态 + 主渲染 ================= */
-let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : location.hash==='#sushi' ? 'sushi' : 'tower';
-const T = {group:null, cursor:0, picks:{}};
+let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : 'sushi';
 const B = {role:null};
 const P = {sel:{}};
 const $ = s=>document.querySelector(s);
@@ -339,93 +253,11 @@ const $ = s=>document.querySelector(s);
 function render(){
   document.body.className='m-'+mode;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.mode===mode));
-  if(mode==='tower') renderTower(); else if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else renderSushi();
+  if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else renderSushi();
 }
 function renderSushi(){
   $('#leftPanel').innerHTML='<div class="sushi-wrap"><img class="sushi-img" src="sushi.png?v=1" alt="sushi" onerror="this.classList.add(\'err\')"><div class="sushi-missing">把这张图存成 <b>GitRepo/sushi.png</b>（与 p2.html 同目录）即可显示</div></div>';
   $('#rightPanel').innerHTML='';
-}
-
-/* ---- 踩塔 ---- */
-function renderTower(){
-  const g=T.group, c=T.cursor; let C='', R='';
-  if(c===0){
-    C='<div class="brand">P2 遗弃末世 · 踩塔 ｜ 1238 近远分组</div>'
-     +'<div class="read-label">开局 AOE：点初始点名（自动定组）</div>'
-     +'<div class="aoe-pick">'+aoeCol('A')+aoeCol('B')+'</div>';
-    R='<div class="rhead"><b>开场 AOE</b><span>右侧：左列分摊组 / 右列闲人组，点你的初始点名 → 一步定组+定位</span></div>'
-     +'<div class="hint">在右侧选「你的组 + 初始点名」 →</div>';
-  } else {
-    C='<div class="brand">'+(g==='A'?'分摊组（踩 1·2·3·8）':'闲人组（踩 4·5·6·7）')+'</div>'+progressHtml();
-    if(c===8){ C+='<div class="pick"><div class="bignote">✅ 已是最后一塔</div></div>'; }
-    else{ const target=READS[g][c];
-      if(target!==undefined){ C+='<div class="read-label">读新点名 → 塔'+target+'</div>'+pickHtml(target); }
-      else{ C+='<div class="read-label">塔'+c+' · '+(isSoak(g,c)?'踩塔（最后一座·无新点名）':'垫场')+'</div>'
-             +'<div class="pick"><button class="pick-btn next" data-act="next">下一塔 ▶</button></div>'; } }
-    C+='<div class="reset"><button data-act="reset">↺ 重新开始</button></div>';
-    const t=c, isFinal=(FINAL_SOAK[g]===t);
-    if(isSoak(g,t)){ const pick=T.picks[t];
-      if(pick){ const arr=positions(t,pick), dual=arr.length>1;
-        R='<div class="rhead"><b>塔'+t+' · 踩塔'+(isFinal?'（最后一座）':'')+'</b>'
-          +(dual?'<span>左1右2 · 1号去左塔①、2号去右塔②</span>':(isFinal?'<span>用最近读到的点名</span>':''))+'</div>'+resultHtml(pick,arr);
-      } else { R='<div class="rhead"><b>塔'+t+' · 踩塔</b></div><div class="hint">这座点名还没读<br>点进度条回去补读</div>'; }
-    } else { const p=padInfo(t); R='<div class="rhead"><b>塔'+t+' · 垫场</b><span>'+p.action+'</span></div>'+resultHtml(p.shape,[{loc:p.loc,tag:''}]); }
-  }
-  $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
-}
-function aoeCol(g){
-  const target=FIRST_SOAK[g], name=(g==='A'?'分摊组':'闲人组'), sub=(g==='A'?'踩 1·2·3·8':'踩 4·5·6·7');
-  let h='<div class="aoe-col"><div class="aoe-h" style="color:'+(g==='A'?'#4aa3ff':'#ff8a3c')+'">'+name+'<small>'+sub+'</small></div>';
-  Object.keys(SOAK[target]).forEach(nm=>{ const sh=SHAPE[nm];
-    h+='<button class="aoe-btn" data-g="'+g+'" data-target="'+target+'" data-cb="'+nm+'" style="border-color:'+sh.color+'">'
-      +'<svg viewBox="0 0 100 100"><use href="#'+sh.sym+'"/></svg><span style="color:'+sh.color+'">'+nm+'</span></button>'; });
-  return h+'</div>';
-}
-function progressHtml(){
-  const g=T.group; let h='<div class="progress">';
-  ['AOE','1','2','3','4','5','6','7','8'].forEach((txt,k)=>{
-    let cls='pcell '+(k===0?'aoe':(isSoak(g,k)?'soak':'pad'));
-    if(k>0 && isSoak(g,k) && T.picks[k]) cls+=' set';
-    if(k===T.cursor) cls+=' cur';
-    h+='<button class="'+cls+'" data-cursor="'+k+'">'+txt+'</button>';
-  });
-  return h+'</div>';
-}
-function pickHtml(target){
-  let h='<div class="pick">';
-  Object.keys(SOAK[target]).forEach(name=>{ const sh=SHAPE[name], on=(T.picks[target]===name)?' on':'';
-    h+='<button class="pick-btn'+on+'" data-target="'+target+'" data-cb="'+name+'" style="border-color:'+sh.color+'">'
-      +'<svg viewBox="0 0 100 100"><use href="#'+sh.sym+'"/></svg><span style="color:'+sh.color+'">'+name+'</span></button>'; });
-  return h+'</div>';
-}
-function resultHtml(shape, arr){
-  const sh=SHAPE[shape]; let txt;
-  if(arr.length===1){ txt='<div class="rgo-go"><span class="lbl">去</span><span style="color:'+sh.color+'">'+arr[0].loc+'</span>'
-      +(arr[0].tag?' <span class="rgo-tag">'+arr[0].tag+'</span>':'')+'</div>'; }
-  else{ txt='<div class="rgo-multi">'; arr.forEach((p,i)=>{ txt+='<div class="rgo-line"><span class="num">'+(i+1)+'</span>'
-      +'<span style="color:'+sh.color+'">'+p.loc+'</span>'+(p.tag?' <span class="rgo-tag">'+p.tag+'</span>':'')+'</div>'; }); txt+='</div>'; }
-  return '<div class="rgo"><svg class="rgo-ic" viewBox="0 0 100 100"><use href="#'+sh.sym+'"/></svg>'
-    +'<div class="rgo-text"><div class="rgo-shape" style="color:'+sh.color+'">'+shape+'</div>'+txt+'</div></div>'
-    +'<div class="rdiagram">'+diagram(arr,shape)+'</div>';
-}
-function diagram(arr, shape){
-  const sh=SHAPE[shape];
-  const tower=(cx,cy,name)=>'<circle cx="'+cx+'" cy="'+cy+'" r="58" fill="rgba(90,170,255,0.06)" stroke="#3a4d63" stroke-width="3"/>'
-    +'<text x="'+cx+'" y="'+(cy+6)+'" text-anchor="middle" fill="#6b7a8d" font-size="20" font-weight="700">'+name+'</text>';
-  let mk='';
-  arr.forEach((pp,i)=>{ const p=POS[pp.loc]; if(!p) return;
-    mk+='<circle cx="'+p.x+'" cy="'+p.y+'" r="30" fill="rgba(255,255,255,0.10)"/>'
-      +'<circle cx="'+p.x+'" cy="'+p.y+'" r="26" fill="none" stroke="'+sh.color+'" stroke-width="5">'
-      +'<animate attributeName="r" values="22;34;22" dur="1.1s" repeatCount="indefinite"/>'
-      +'<animate attributeName="opacity" values="1;0.25;1" dur="1.1s" repeatCount="indefinite"/></circle>'
-      +'<use href="#'+sh.sym+'" x="'+(p.x-20)+'" y="'+(p.y-20)+'" width="40" height="40"/>';
-    if(arr.length>1){ mk+='<circle cx="'+(p.x+24)+'" cy="'+(p.y-24)+'" r="13" fill="#0c0f14" stroke="'+sh.color+'" stroke-width="2.5"/>'
-      +'<text x="'+(p.x+24)+'" y="'+(p.y-23)+'" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="17" font-weight="800">'+(i+1)+'</text>'; }
-  });
-  return '<svg viewBox="0 0 450 300" preserveAspectRatio="xMidYMid meet">'
-    +'<circle cx="225" cy="46" r="24" fill="#4d2a63" stroke="#b06bff" stroke-width="3"/>'
-    +'<text x="225" y="51" text-anchor="middle" fill="#e9d3ff" font-size="15" font-weight="700">BOSS</text>'
-    +tower(160,195,'左塔')+tower(320,195,'右塔')+mk+'</svg>';
 }
 
 /* ---- 黑洞 ---- */
@@ -487,12 +319,6 @@ function renderP4(){
 /* ================= 事件 ================= */
 document.addEventListener('click', e=>{
   const tab=e.target.closest('[data-mode]'); if(tab){ mode=tab.dataset.mode; render(); return; }
-  // 踩塔
-  const pk=e.target.closest('[data-cb]');
-  if(pk){ if(pk.dataset.g){ T.group=pk.dataset.g; T.picks={}; } T.picks[+pk.dataset.target]=pk.dataset.cb; T.cursor=Math.min(8,T.cursor+1); render(); return; }
-  const nx=e.target.closest('[data-act="next"]'); if(nx){ T.cursor=Math.min(8,T.cursor+1); render(); return; }
-  const pc=e.target.closest('[data-cursor]');     if(pc){ T.cursor=+pc.dataset.cursor; render(); return; }
-  const rs=e.target.closest('[data-act="reset"]'); if(rs){ T.cursor=0; T.picks={}; render(); return; }
   // 黑洞
   const rb=e.target.closest('[data-role]'); if(rb){ B.role=rb.dataset.role; render(); return; }
   // P4
@@ -501,30 +327,18 @@ document.addEventListener('click', e=>{
 });
 
 /* ================= 联机同步（Firebase 实时数据库 · 可选） =================
-   共享 = 踩塔 T(组/进度/点名) + P4 真相(除"我的剑"外的全部)；
+   共享 = P4 真相(除"我的剑"外的全部)；
    个人 = 黑洞号位 B.role、P4 my1/my2、当前标签 —— 不进房间则零影响、离线照常。*/
-let roomCode=null, towerRef=null, p4Ref=null;
-let applyingRemote=false, towerHydrated=false, p4Hydrated=false;
-let lastTower='', lastP4='';
+let roomCode=null, p4Ref=null;
+let applyingRemote=false, p4Hydrated=false;
+let lastP4='';
 
 function p4Shared(){ const o={}; for(const k in P.sel){ if(k!=='my1'&&k!=='my2') o[k]=true; } return o; }
-function pushTower(){ if(!roomCode||applyingRemote) return;
-  const o={group:T.group,cursor:T.cursor,picks:T.picks}, s=JSON.stringify(o);
-  if(s!==lastTower){ lastTower=s; towerRef.set(o); } }
 function pushP4(){ if(!roomCode||applyingRemote) return;
   const o=p4Shared(), s=JSON.stringify(o);
   if(s!==lastP4){ lastP4=s; p4Ref.set(o); } }
-function pushShared(){ pushTower(); pushP4(); }
+function pushShared(){ pushP4(); }
 
-function applyTower(v){ applyingRemote=true;
-  if(v==null && !towerHydrated){ towerHydrated=true; applyingRemote=false; pushTower(); return; }  // 空房间→用本地播种
-  towerHydrated=true;
-  if(v){ T.group=(v.group!==undefined?v.group:null); T.cursor=v.cursor||0;
-    let pk={}, vp=v.picks; if(vp){ if(Array.isArray(vp)) vp.forEach((val,i)=>{ if(val!=null) pk[i]=val; }); else pk=vp; }
-    T.picks=pk; }
-  else { T.group=null; T.cursor=0; T.picks={}; }
-  lastTower=JSON.stringify({group:T.group,cursor:T.cursor,picks:T.picks});
-  render(); applyingRemote=false; }
 function applyP4(v){ applyingRemote=true;
   if(v==null && !p4Hydrated){ p4Hydrated=true; applyingRemote=false; pushP4(); return; }
   p4Hydrated=true;
@@ -548,16 +362,15 @@ async function joinRoom(code){ code=(code||'').trim(); if(!code) return;
     await loadFirebase();
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CFG);
     const db=firebase.database();
-    if(towerRef) towerRef.off(); if(p4Ref) p4Ref.off();   // 防止重复进房时旧房间监听泄漏
-    roomCode=code; towerHydrated=false; p4Hydrated=false; lastTower=''; lastP4='';
-    towerRef=db.ref('rooms/'+code+'/tower'); p4Ref=db.ref('rooms/'+code+'/p4');
-    towerRef.on('value', s=>applyTower(s.val()));
+    if(p4Ref) p4Ref.off();   // 防止重复进房时旧房间监听泄漏
+    roomCode=code; p4Hydrated=false; lastP4='';
+    p4Ref=db.ref('rooms/'+code+'/p4');
     p4Ref.on('value', s=>applyP4(s.val()));
     try{ localStorage.setItem('p2room', code); }catch(_){}
     setRoomUrl(code); updateBadge();
-  }catch(e){ roomCode=null; towerRef=p4Ref=null; updateBadge(); alert('联机连接失败，继续离线使用。'); } }
-function leaveRoom(){ if(towerRef) towerRef.off(); if(p4Ref) p4Ref.off();
-  roomCode=null; towerRef=p4Ref=null; lastTower=lastP4=''; towerHydrated=p4Hydrated=false;
+  }catch(e){ roomCode=null; p4Ref=null; updateBadge(); alert('联机连接失败，继续离线使用。'); } }
+function leaveRoom(){ if(p4Ref) p4Ref.off();
+  roomCode=null; p4Ref=null; lastP4=''; p4Hydrated=false;
   try{ localStorage.removeItem('p2room'); }catch(_){}
   clearRoomUrl(); updateBadge(); }
 function setRoomUrl(c){ try{ const u=new URL(location.href); u.searchParams.set('room',c); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(_){} }
