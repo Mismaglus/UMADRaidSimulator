@@ -115,6 +115,33 @@
   .p4me-k{flex:none;font-size:clamp(40px,11vh,104px);font-weight:900;line-height:1;}
   .p4me.still .p4me-k{color:#7cc0ff;} .p4me.move .p4me-k{color:#ffac6b;}
   .p4me-d{font-size:clamp(14px,2.7vh,24px);font-weight:800;line-height:1.3;}
+
+  /* ===== 猜拳 RPS ===== */
+  .rps-pick{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
+  .rps-btn{flex:1;min-height:0;border:3px solid var(--line);border-radius:16px;background:var(--panel);
+    color:var(--txt);cursor:pointer;font-size:clamp(26px,6vh,52px);font-weight:900;}
+  .rps-btn.sel{border-color:var(--gold);background:#3a3420;color:#ffe699;box-shadow:0 0 0 3px var(--gold) inset;}
+  .rps-btn.dis{opacity:.4;}
+  .rps-score{flex:none;display:flex;align-items:center;justify-content:center;gap:18px;font-size:clamp(28px,7vh,64px);font-weight:900;}
+  .rps-score .me{color:#4aa3ff;} .rps-score .op{color:#ff8a3c;} .rps-score .vs{color:var(--dim);}
+  .rps-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:14px;border:2px dashed var(--line);border-radius:16px;padding:10px;}
+  .rps-stage.reveal.win{border-color:#2ea043;background:#0f2417;border-style:solid;}
+  .rps-stage.reveal.lose{border-color:#e0574a;background:#2a1512;border-style:solid;}
+  .rps-stage.reveal.draw{border-color:#8a99ad;background:#1a2230;border-style:solid;}
+  .rps-side{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .rps-side-h{font-size:clamp(14px,2.6vh,22px);color:var(--dim);font-weight:800;}
+  .rps-hand{font-size:clamp(56px,17vh,150px);line-height:1;}
+  .rps-hand.dim{opacity:.45;}
+  .rps-mid{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;}
+  .rps-res{font-size:clamp(22px,5vh,44px);font-weight:900;text-align:center;}
+  .rps-res.dim{color:var(--dim);font-weight:800;font-size:clamp(16px,3.2vh,26px);}
+  .rps-vs{font-size:clamp(15px,3vh,24px);color:var(--dim);font-weight:800;}
+  .rps-tip{text-align:center;color:var(--dim);font-size:clamp(18px,4vh,30px);font-weight:800;line-height:1.5;}
+  .rps-tip span{font-size:.7em;}
+  .rps-next{flex:none;}
+  .rps-next button{width:100%;border:3px solid var(--next);border-radius:14px;background:#13283f;color:#cfe6ff;cursor:pointer;min-height:8vh;font-size:clamp(18px,3.6vh,28px);font-weight:900;}
+  .rps-need{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;color:var(--dim);font-size:clamp(18px,4vh,30px);font-weight:800;line-height:1.6;border:2px dashed var(--line);border-radius:16px;padding:20px;}
+  .rps-need-emoji{font-size:clamp(48px,12vh,110px);}
 </style>
 </head>
 <body>
@@ -123,7 +150,8 @@
   <button class="tab" data-mode="sushi">sushi</button>
   <button class="tab" data-mode="blackhole">黑洞接线</button>
   <button class="tab" data-mode="p4">P4 报点</button>
-  <button class="linkbtn" id="roomBtn" title="联机同步：和朋友共享 P4">联机</button>
+  <button class="tab" data-mode="rps">猜拳</button>
+  <button class="linkbtn" id="roomBtn" title="联机同步：和朋友共享 P4 / 猜拳">联机</button>
 </div>
 <div class="app">
   <div class="left" id="leftPanel"></div>
@@ -247,7 +275,7 @@ function p4MyState(){
 function p4toggle(id){ if(P.sel[id]) return; const p=P4PARTNER[id]; if(p) delete P.sel[p]; P.sel[id]=true; }
 
 /* ================= 状态 + 主渲染 ================= */
-let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : 'sushi';
+let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : location.hash==='#rps' ? 'rps' : 'sushi';
 const B = {role:null};
 const P = {sel:{}};
 const $ = s=>document.querySelector(s);
@@ -255,7 +283,7 @@ const $ = s=>document.querySelector(s);
 function render(){
   document.body.className='m-'+mode;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.mode===mode));
-  if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else renderSushi();
+  if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else if(mode==='rps') renderRPS(); else renderSushi();
 }
 function renderSushi(){
   $('#leftPanel').innerHTML='<div class="sushi-wrap"><img class="sushi-img" src="sushi.png?v=1" alt="sushi" onerror="this.classList.add(\'err\')"><div class="sushi-missing">把这张图存成 <b>GitRepo/sushi.png</b>（与 p2.html 同目录）即可显示</div></div>';
@@ -318,6 +346,46 @@ function renderP4(){
   $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
 }
 
+/* ---- 猜拳 RPS ---- */
+const CID = (()=>{ try{ let c=localStorage.getItem('p2cid'); if(!c){ c=Math.random().toString(36).slice(2,10); localStorage.setItem('p2cid',c); } return c; }catch(_){ return 'c'+Math.floor(Math.random()*1e9); } })();
+const G = { round:1, picks:{}, wins:{} };   // 本地镜像 rooms/<code>/rps
+let myCountedRound = 0;
+const RPS_BEATS = { rock:'scissors', scissors:'paper', paper:'rock' };   // 键 克 值
+const RPS_LABEL = { rock:'✊ 石头', scissors:'✌ 剪刀', paper:'✋ 布' };
+const RPS_HAND  = { rock:'✊', scissors:'✌', paper:'✋' };
+function rpsOppCid(){ for(const k in G.picks){ if(k!==CID) return k; } for(const k in G.wins){ if(k!==CID) return k; } return null; }
+function rpsResult(){ const me=G.picks[CID], op=rpsOppCid(), om=op?G.picks[op]:null;
+  if(!me||!om) return null; if(me===om) return 'draw'; return RPS_BEATS[me]===om ? 'win':'lose'; }
+function renderRPS(){
+  if(!roomCode){
+    $('#leftPanel').innerHTML='<div class="rps-need"><div class="rps-need-emoji">✊ ✌ ✋</div><div>双人猜拳<br>先点右上角 <b>「联机」</b> 进同一个房间<br>两人各自出拳，都出后自动判定</div></div>';
+    $('#rightPanel').innerHTML=''; return;
+  }
+  const me=G.picks[CID], op=rpsOppCid(), om=op?G.picks[op]:null, both=!!(me&&om);
+  const myW=G.wins[CID]||0; let opW=0; for(const k in G.wins){ if(k!==CID) opW+=G.wins[k]; }
+  let C='<div class="brand">猜拳 · 房间 '+roomCode+'｜各自出拳，双方都出后判定</div><div class="rps-pick">';
+  ['rock','scissors','paper'].forEach(m=>{ const sel=me===m?' sel':'', dis=me?' dis':'';
+    C+='<button class="rps-btn'+sel+dis+'" data-rps="'+m+'"'+(me?' disabled':'')+'>'+RPS_LABEL[m]+'</button>'; });
+  C+='</div><div class="reset"><button data-act="rpsreset">↺ 重置比分</button></div>';
+  let R='<div class="rps-score"><span class="me">你 '+myW+'</span><span class="vs">:</span><span class="op">'+opW+' 对方</span></div>';
+  if(both){ const r=rpsResult(), txt=r==='win'?'🎉 你赢了':r==='lose'?'😶 你输了':'🤝 平局';
+    R+='<div class="rps-stage reveal '+r+'">'
+      +'<div class="rps-side"><div class="rps-side-h">你</div><div class="rps-hand">'+RPS_HAND[me]+'</div></div>'
+      +'<div class="rps-mid"><div class="rps-res">'+txt+'</div><div class="rps-vs">VS</div></div>'
+      +'<div class="rps-side"><div class="rps-side-h">对方</div><div class="rps-hand">'+RPS_HAND[om]+'</div></div>'
+      +'</div><div class="rps-next"><button data-act="rpsnext">下一局 ▶</button></div>';
+  } else if(me){
+    R+='<div class="rps-stage waiting">'
+      +'<div class="rps-side"><div class="rps-side-h">你</div><div class="rps-hand">'+RPS_HAND[me]+'</div></div>'
+      +'<div class="rps-mid"><div class="rps-res dim">等对方出拳…</div></div>'
+      +'<div class="rps-side"><div class="rps-side-h">对方</div><div class="rps-hand dim">？</div></div></div>';
+  } else {
+    const oppPicked=!!(op&&G.picks[op]);
+    R+='<div class="rps-stage idle"><div class="rps-tip">'+(oppPicked?'对方已出拳 ✅<br>轮到你 →':'在右侧出拳 →<br><span>石头 / 剪刀 / 布</span>')+'</div></div>';
+  }
+  $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
+}
+
 /* ================= 事件 ================= */
 document.addEventListener('click', e=>{
   const tab=e.target.closest('[data-mode]'); if(tab){ mode=tab.dataset.mode; render(); return; }
@@ -326,12 +394,16 @@ document.addEventListener('click', e=>{
   // P4
   const p4=e.target.closest('[data-p4]'); if(p4){ p4toggle(p4.dataset.p4); render(); return; }
   const p4r=e.target.closest('[data-act="p4reset"]'); if(p4r){ P.sel={}; render(); return; }
+  // 猜拳
+  const rp=e.target.closest('[data-rps]'); if(rp){ if(roomCode&&rpsRef&&!G.picks[CID]){ G.picks[CID]=rp.dataset.rps; rpsRef.child('picks/'+CID).set(G.picks[CID]); render(); } return; }
+  const rn=e.target.closest('[data-act="rpsnext"]'); if(rn){ if(roomCode&&rpsRef){ const nr=G.round+1; G.round=nr; G.picks={}; rpsRef.update({round:nr, picks:null}); render(); } return; }
+  const rr=e.target.closest('[data-act="rpsreset"]'); if(rr){ if(roomCode&&rpsRef){ G.round=1; G.picks={}; G.wins={}; myCountedRound=0; rpsRef.set({round:1,picks:{},wins:{}}); render(); } return; }
 });
 
 /* ================= 联机同步（Firebase 实时数据库 · 可选） =================
    共享 = P4 真相(除"我的剑"外的全部)；
    个人 = 黑洞号位 B.role、P4 my1/my2、当前标签 —— 不进房间则零影响、离线照常。*/
-let roomCode=null, p4Ref=null;
+let roomCode=null, p4Ref=null, rpsRef=null;
 let applyingRemote=false, p4Hydrated=false;
 let lastP4='';
 
@@ -350,6 +422,15 @@ function applyP4(v){ applyingRemote=true;
   lastP4=JSON.stringify(p4Shared());
   render(); applyingRemote=false; }
 
+/* 猜拳：粒度写(picks/<id>、wins/<id>)避免并发覆盖；赢家只给自己计分一次 */
+function rpsSelfScore(){ const r=rpsResult();
+  if(r && myCountedRound!==G.round){ myCountedRound=G.round;
+    if(r==='win' && rpsRef){ rpsRef.child('wins/'+CID).set((G.wins[CID]||0)+1); } } }
+function applyRPS(v){ G.round=(v&&v.round)||1; G.picks=(v&&v.picks)||{}; G.wins=(v&&v.wins)||{};
+  if(G.round<myCountedRound) myCountedRound=0;   // 回合数回退=重置/新局 → 允许重新计分
+  if(rpsRef) rpsSelfScore();
+  if(mode==='rps') render(); }
+
 function loadFirebase(){ return new Promise((res,rej)=>{
   if(typeof firebase!=='undefined' && firebase.database) return res();
   const urls=['https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js',
@@ -364,15 +445,18 @@ async function joinRoom(code){ code=(code||'').trim(); if(!code) return;
     await loadFirebase();
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CFG);
     const db=firebase.database();
-    if(p4Ref) p4Ref.off();   // 防止重复进房时旧房间监听泄漏
-    roomCode=code; p4Hydrated=false; lastP4='';
+    if(p4Ref) p4Ref.off(); if(rpsRef) rpsRef.off();   // 防止重复进房时旧房间监听泄漏
+    roomCode=code; p4Hydrated=false; lastP4=''; myCountedRound=0; G.round=1; G.picks={}; G.wins={};
     p4Ref=db.ref('rooms/'+code+'/p4');
+    rpsRef=db.ref('rooms/'+code+'/rps');
     p4Ref.on('value', s=>applyP4(s.val()));
+    rpsRef.on('value', s=>applyRPS(s.val()));
     try{ localStorage.setItem('p2room', code); }catch(_){}
     setRoomUrl(code); updateBadge();
-  }catch(e){ roomCode=null; p4Ref=null; updateBadge(); alert('联机连接失败，继续离线使用。'); } }
-function leaveRoom(){ if(p4Ref) p4Ref.off();
-  roomCode=null; p4Ref=null; lastP4=''; p4Hydrated=false;
+  }catch(e){ roomCode=null; p4Ref=null; rpsRef=null; updateBadge(); alert('联机连接失败，继续离线使用。'); } }
+function leaveRoom(){ if(p4Ref) p4Ref.off(); if(rpsRef) rpsRef.off();
+  roomCode=null; p4Ref=null; rpsRef=null; lastP4=''; p4Hydrated=false;
+  myCountedRound=0; G.round=1; G.picks={}; G.wins={};
   try{ localStorage.removeItem('p2room'); }catch(_){}
   clearRoomUrl(); updateBadge(); }
 function setRoomUrl(c){ try{ const u=new URL(location.href); u.searchParams.set('room',c); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(_){} }
