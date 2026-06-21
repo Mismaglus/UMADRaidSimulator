@@ -191,14 +191,14 @@ const ROUNDS={1:[{w:1,lines:1},{w:2,lines:2}], 2:[{w:1,lines:3},{w:2,lines:1},{w
   3:[{w:1,lines:3},{w:2,lines:1},{w:3,lines:1}], 4:[{w:1,lines:2},{w:2,lines:1}]};
 const PLAN={
   std:{
-    '攻击1':{1:{catch:{1:'接这1根',2:'换位·再接1根'}}, 2:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'锁链1'}},
-    '攻击2':{1:{catch:{2:'2根·接1根'}}, 2:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'锁链2'}},
+    '攻击1':{1:{catch:{2:'接这2根'}}, 2:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'锁链1'}},
+    '攻击2':{1:{catch:{1:'接这1根'}}, 2:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'锁链2'}},
     '攻击3':{2:{catch:{1:'3根·接1根'},toEnd:true}},
     '锁链1':{2:{catch:{2:'接「攻击1」的线'},toEnd:true}, 3:{catch:{1:'3根·接1根'},handoffAt:2,takenBy:'禁止1'}},
     '锁链2':{2:{catch:{3:'接「攻击2」的线'},toEnd:true}, 3:{catch:{1:'3根·接1根'},handoffAt:3,takenBy:'禁止2'}},
     '锁链3':{3:{catch:{1:'3根·接1根'},toEnd:true}},
-    '禁止1':{3:{catch:{2:'接「锁链1」的线'},toEnd:true}, 4:{catch:{1:'2根·接1根'}}},
-    '禁止2':{3:{catch:{3:'接「锁链2」的线'},toEnd:true}, 4:{catch:{1:'2根·接1根',2:'再接这1根'}}},
+    '禁止1':{3:{catch:{2:'接「锁链1」的线'},toEnd:true}, 4:{catch:{2:'接这1根'}}},
+    '禁止2':{3:{catch:{3:'接「锁链2」的线'},toEnd:true}, 4:{catch:{1:'接这2根'}}},
   },
 };
 const planOf=role=>PLAN.std[role];
@@ -292,7 +292,7 @@ function renderSushi(){
 
 /* ---- 黑洞 ---- */
 function renderBlackhole(){
-  let C='<div class="brand">黑洞接线 · 选号位｜接线后持线到「被接走 / 本轮结束」（跨轮重置）</div><div class="rgrps">';
+  let C='<div class="brand">黑洞接线 · <b style="color:var(--gold)">变体打法</b>｜选号位 · 接线后持线到「被接走 / 本轮结束」（跨轮重置）</div><div class="rgrps">';
   GROUPS.forEach(g=>{ C+='<div class="rgrp"><div class="rgrp-h" style="color:'+g.color+'">'+g.name+'</div><div class="rgrp-btns">';
     g.roles.forEach(r=>{ const on=B.role===r;
       C+='<button class="role-btn'+(on?' on':'')+'" data-role="'+r+'" style="border-color:'+g.color+(on?';background:'+g.color+'22':'')+'">'+r+'</button>'; });
