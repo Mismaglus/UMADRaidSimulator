@@ -110,7 +110,7 @@
   .p4suf{font-size:.58em;color:var(--dim);font-weight:700;}
   .p4sw{font-weight:900;}
   .p4steel{color:#e0574a;} .p4ring{color:#4aa3ff;}
-  .p4me{flex:none;display:flex;align-items:center;gap:16px;border:3px solid var(--line);border-radius:13px;padding:6px 16px;min-height:13vh;}
+  .p4me{flex:none;display:flex;align-items:center;justify-content:center;gap:16px;border:3px solid var(--line);border-radius:13px;padding:6px 16px;min-height:13vh;}
   .p4me.wait{justify-content:center;text-align:center;color:var(--dim);font-size:clamp(16px,3.2vh,26px);font-weight:800;}
   .p4me.still{border-color:#4aa3ff;background:#10243b;}
   .p4me.move{border-color:#ff8a3c;background:#2e1d10;}
@@ -334,8 +334,7 @@ function renderP4(){
   let banner;
   if(!ms.my){ banner='<div class="p4me wait">先在右侧选「我的剑」(1动静 / 2动静)</div>'; }
   else if(!ms.sword){ banner='<div class="p4me wait">再选「'+ms.my+'动静」是 真 还是 假</div>'; }
-  else{ banner='<div class="p4me '+(ms.sword==='静'?'still':'move')+'"><span class="p4me-k">'+ms.sword+'</span>'
-      +'<span class="p4me-d">'+ms.my+'动静 · '+ms.tf+' → '+ms.sword+'剑<br>'+ms.out+' · '+ms.sec+'</span></div>'; }
+  else{ banner='<div class="p4me '+(ms.sword==='静'?'still':'move')+'"><span class="p4me-k">'+ms.sword+'</span></div>'; }
   const lines=p4Output(), cat=['出','面向','火','出','面向','水','冰雷'];
   let R=banner+'<div class="p4out">';
   lines.forEach((t,i)=>{
