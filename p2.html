@@ -108,6 +108,8 @@
   .p4t{flex:1;min-width:0;font-size:clamp(20px,4.8vh,42px);font-weight:900;}
   .p4t.empty{color:#39434f;font-weight:600;font-size:clamp(14px,2.4vh,20px);}
   .p4suf{font-size:.58em;color:var(--dim);font-weight:700;}
+  .p4sw{font-weight:900;}
+  .p4steel{color:#e0574a;} .p4ring{color:#4aa3ff;}
   .p4me{flex:none;display:flex;align-items:center;gap:16px;border:3px solid var(--line);border-radius:13px;padding:6px 16px;min-height:13vh;}
   .p4me.wait{justify-content:center;text-align:center;color:var(--dim);font-size:clamp(16px,3.2vh,26px);font-weight:800;}
   .p4me.still{border-color:#4aa3ff;background:#10243b;}
@@ -227,8 +229,8 @@ const P4BTN={
   A:{label:'真',out:'雷出',sec:'石化眼出 背对',sword:'静'}, B:{label:'假',out:'水出',sec:'石化眼进 面对',sword:'动'},
   C:{label:'短'}, D:{label:'长'},
   E:{label:'真',out:'雷出',sec:'石化眼出 背对',sword:'静'}, F:{label:'假',out:'水出',sec:'石化眼进 面对',sword:'动'},
-  zh:{label:'真',out:'放置钢铁 出'}, jh:{label:'假',out:'放置月环 留'},
-  zs:{label:'真',out:'放置月环 留'}, js:{label:'假',out:'放置钢铁 出'},
+  zh:{label:'真',out:'<span class="p4steel">钢铁</span>'}, jh:{label:'假',out:'<span class="p4ring">月环</span>'},
+  zs:{label:'真',out:'<span class="p4ring">月环</span>'}, js:{label:'假',out:'<span class="p4steel">钢铁</span>'},
   zl:{label:'真'}, jl:{label:'假'}, zl2:{label:'真'}, jl2:{label:'假'},
   zb:{label:'真'}, jb:{label:'假'}, zb2:{label:'真'}, jb2:{label:'假'},
 };
@@ -249,7 +251,6 @@ function p4PairHtml(row){
     h+='<button class="p4btn'+kind+on+'" data-p4="'+id+'">'+txt+'</button>'; });
   return h+'</div></div>';
 }
-function swordOut(id){ return P4BTN[id].out+' <span class="p4suf">+'+P4BTN[id].sword+'剑</span>'; }
 function p4Output(){
   const sel=P.sel, pick=(a,b)=> sel[a]?a:(sel[b]?b:null);
   const lines=['','','','','','',''];           // index 0..6 = 行 1..7
@@ -257,8 +258,8 @@ function p4Output(){
   const l1=pick('zl','jl'), l2=pick('zl2','jl2'), i1=pick('zb','jb'), i2=pick('zb2','jb2');
   if(zhjh) lines[2]=P4BTN[zhjh].out;
   if(zsjs) lines[5]=P4BTN[zsjs].out;
-  if(sel.C){ if(ab){ lines[0]=swordOut(ab); lines[1]=P4BTN[ab].sec; } if(ef){ lines[3]=swordOut(ef); lines[4]=P4BTN[ef].sec; } }
-  if(sel.D){ if(ab){ lines[3]=swordOut(ab); lines[1]=P4BTN[ab].sec; } if(ef){ lines[0]=swordOut(ef); lines[4]=P4BTN[ef].sec; } }
+  if(sel.C){ if(ab){ lines[0]=P4BTN[ab].out; lines[1]=P4BTN[ab].sec; } if(ef){ lines[3]=P4BTN[ef].out; lines[4]=P4BTN[ef].sec; } }
+  if(sel.D){ if(ab){ lines[3]=P4BTN[ab].out; lines[1]=P4BTN[ab].sec; } if(ef){ lines[0]=P4BTN[ef].out; lines[4]=P4BTN[ef].sec; } }
   let lr='', ir='';
   if(l1&&l2) lr = ((l1==='zl')===(l2==='zl2')) ? '真雷':'假雷';
   if(i1&&i2) ir = ((i1==='zb')===(i2==='zb2')) ? '真冰':'假冰';
