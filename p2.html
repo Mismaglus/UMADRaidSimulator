@@ -29,6 +29,7 @@
   .right{width:40%;max-width:460px;display:flex;flex-direction:column;gap:8px;min-height:0;}
   body.m-p4 .right{width:60%;max-width:760px;}   /* P4 按钮多，给它更宽；黑洞保持 40% */
   body.m-sushi .right{display:none;}             /* sushi 只显示一张图，铺满 */
+  body.m-p5 .right{display:none;}                 /* p5 机制顺序，铺满 */
   .sushi-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;}
   .sushi-img{width:100%;height:100%;object-fit:contain;border-radius:8px;}
   .sushi-img.err{display:none;}
@@ -144,6 +145,15 @@
   .rps-next button{width:100%;border:3px solid var(--next);border-radius:14px;background:#13283f;color:#cfe6ff;cursor:pointer;min-height:8vh;font-size:clamp(18px,3.6vh,28px);font-weight:900;}
   .rps-need{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;color:var(--dim);font-size:clamp(18px,4vh,30px);font-weight:800;line-height:1.6;border:2px dashed var(--line);border-radius:16px;padding:20px;}
   .rps-need-emoji{font-size:clamp(48px,12vh,110px);}
+
+  /* ===== P5 机制顺序 ===== */
+  .p5wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px;width:100%;max-width:660px;margin:0 auto;}
+  .p5row{flex:1;min-height:0;display:flex;align-items:center;gap:16px;border:2px solid var(--line);border-radius:10px;background:var(--panel);padding:2px 16px;}
+  .p5row.hl{background:#3a1f24;border-color:#a8514a;}
+  .p5t{flex:none;width:clamp(56px,9vw,82px);font-size:clamp(16px,3.2vh,26px);font-weight:800;color:var(--dim);}
+  .p5row.hl .p5t{color:#ffb3aa;}
+  .p5m{flex:1;min-width:0;font-size:clamp(18px,3.8vh,30px);font-weight:900;}
+  .p5row.hl .p5m{color:#ff9b90;}
 </style>
 </head>
 <body>
@@ -152,6 +162,7 @@
   <button class="tab" data-mode="sushi">sushi</button>
   <button class="tab" data-mode="blackhole">黑洞接线</button>
   <button class="tab" data-mode="p4">P4 报点</button>
+  <button class="tab" data-mode="p5">p5</button>
   <button class="tab" data-mode="rps">猜拳</button>
   <button class="linkbtn" id="roomBtn" title="联机同步：和朋友共享 P4 / 猜拳">联机</button>
 </div>
@@ -276,7 +287,7 @@ function p4MyState(){
 function p4toggle(id){ if(P.sel[id]) return; const p=P4PARTNER[id]; if(p) delete P.sel[p]; P.sel[id]=true; }
 
 /* ================= 状态 + 主渲染 ================= */
-let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : location.hash==='#rps' ? 'rps' : 'sushi';
+let mode = location.hash==='#bh' ? 'blackhole' : location.hash==='#p4' ? 'p4' : location.hash==='#p5' ? 'p5' : location.hash==='#rps' ? 'rps' : 'sushi';
 const B = {role:null};
 const P = {sel:{}};
 const $ = s=>document.querySelector(s);
@@ -284,7 +295,7 @@ const $ = s=>document.querySelector(s);
 function render(){
   document.body.className='m-'+mode;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.mode===mode));
-  if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else if(mode==='rps') renderRPS(); else renderSushi();
+  if(mode==='blackhole') renderBlackhole(); else if(mode==='p4') renderP4(); else if(mode==='p5') renderP5(); else if(mode==='rps') renderRPS(); else renderSushi();
 }
 function renderSushi(){
   $('#leftPanel').innerHTML='<div class="sushi-wrap"><img class="sushi-img" src="sushi.png?v=1" alt="sushi" onerror="this.classList.add(\'err\')"><div class="sushi-missing">把这张图存成 <b>GitRepo/sushi.png</b>（与 p2.html 同目录）即可显示</div></div>';
@@ -344,6 +355,28 @@ function renderP4(){
   });
   R+='</div>';
   $('#rightPanel').innerHTML=C; $('#leftPanel').innerHTML=R;
+}
+
+/* ---- P5 机制顺序 ---- */
+const P5=[
+  {t:'00:08', m:'四连AOE'},
+  {t:'00:14', m:'职能平A×3', hl:1},
+  {t:'00:25', m:'洪水'},
+  {t:'00:38', m:'癫狂交响曲'},
+  {t:'00:51', m:'职能平A×2', hl:1},
+  {t:'01:10', m:'三星踩塔'},
+  {t:'01:30', m:'四连AOE'},
+  {t:'01:36', m:'职能平A×2', hl:1},
+  {t:'01:41', m:'地火'},
+  {t:'02:00', m:'分散'},
+  {t:'02:10', m:'癫狂交响曲'},
+  {t:'02:22', m:'职能平A×3', hl:1},
+  {t:'02:40', m:'遗弃末世'},
+];
+function renderP5(){
+  let h='<div class="brand">P5 · 机制顺序（职能平A = 红）</div><div class="p5wrap">';
+  P5.forEach(e=>{ h+='<div class="p5row'+(e.hl?' hl':'')+'"><span class="p5t">'+e.t+'</span><span class="p5m">'+e.m+'</span></div>'; });
+  $('#leftPanel').innerHTML=h+'</div>'; $('#rightPanel').innerHTML='';
 }
 
 /* ---- 猜拳 RPS ---- */
