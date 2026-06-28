@@ -110,7 +110,7 @@
   .p4t.empty{color:#39434f;font-weight:600;font-size:clamp(14px,2.4vh,20px);}
   .p4suf{font-size:.58em;color:var(--dim);font-weight:700;}
   .p4sw{font-weight:900;}
-  .p4steel{color:#e0574a;} .p4ring{color:#4aa3ff;}
+  .p4steel{color:#e0574a;} .p4ring{color:#4aa3ff;} .p4stone{color:var(--gold);}
   .p4me{flex:none;display:flex;align-items:center;justify-content:center;gap:16px;border:3px solid var(--line);border-radius:13px;padding:6px 16px;min-height:13vh;}
   .p4me.wait{justify-content:center;text-align:center;color:var(--dim);font-size:clamp(16px,3.2vh,26px);font-weight:800;}
   .p4me.still{border-color:#4aa3ff;background:#10243b;}
@@ -237,9 +237,9 @@ function waveStatus(rd,w,lastW){
 /* 剑: 真=静剑(雷出·背对), 假=动剑(水出·面对) */
 const P4BTN={
   my1:{label:'1动静'}, my2:{label:'2动静'},
-  A:{label:'真',out:'雷出',sec:'背对',sword:'静'}, B:{label:'假',out:'水出',sec:'面对',sword:'动'},
+  A:{label:'真',out:'雷出',sec:'背对 <span class="p4stone">石化出</span>',sword:'静'}, B:{label:'假',out:'水出',sec:'面对 <span class="p4stone">石化进</span>',sword:'动'},
   C:{label:'短'}, D:{label:'长'},
-  E:{label:'真',out:'雷出',sec:'背对',sword:'静'}, F:{label:'假',out:'水出',sec:'面对',sword:'动'},
+  E:{label:'真',out:'雷出',sec:'背对 <span class="p4stone">石化出</span>',sword:'静'}, F:{label:'假',out:'水出',sec:'面对 <span class="p4stone">石化进</span>',sword:'动'},
   zh:{label:'真',out:'<span class="p4steel">钢铁</span>'}, jh:{label:'假',out:'<span class="p4ring">月环</span>'},
   zs:{label:'真',out:'<span class="p4ring">月环</span>'}, js:{label:'假',out:'<span class="p4steel">钢铁</span>'},
   zl:{label:'真'}, jl:{label:'假'}, zl2:{label:'真'}, jl2:{label:'假'},
